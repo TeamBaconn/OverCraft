@@ -325,7 +325,7 @@ public class Mei
             }
           }
         }.runTaskTimer(Core.plugin, 0L, 1L);
-        Entity en = Core.getNearestEntityInSight(this.player, 6);
+        Entity en = Core.getNearestEntityInSight(player, 8);
         if ((en != null) && ((en instanceof Player))) {
           addFreeze((Player)en);
         }
@@ -503,11 +503,7 @@ public class Mei
       }
     }
     else if ((e.getDamager().equals(this.player)) && ((e.getEntity() instanceof Player))) {
-      if (this.arena.isAlly(this.player, (Player)e.getEntity())) {
-        e.setCancelled(true);
-      } else {
-        e.setDamage(this.shootdamage);
-      }
+      addFreeze(((Player)e.getEntity()));
     }
   }
   
