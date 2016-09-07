@@ -1,0 +1,7 @@
+name: OverCraft
+main: com.Tuong.OverCraftCore.Core
+version: 3.9
+author: NguyenLamTuong
+commands:
+    oc:
+        description: More infomation about OverCraft
