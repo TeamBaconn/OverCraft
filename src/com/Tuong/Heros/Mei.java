@@ -92,21 +92,22 @@ public class Mei
     player.setMaxHealth(this.maxREGENERATIONth);
     player.setHealth(player.getMaxHealth());
     Bukkit.getPluginManager().registerEvents(this, Core.plugin);
+    if(Core.t) player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_ENDERMEN_HURT, 1, 1);
     recharge();
   }
   private ItemStack getShuriken()
   {
-    ItemStack shuriken = new ItemStack(Material.STICK, 1);
+    ItemStack shuriken = new ItemStack(Material.EMERALD, 1);
     ItemMeta meta = shuriken.getItemMeta();
     shuriken.setItemMeta(meta);
-    meta.setDisplayName(ChatColor.BOLD + "" + ChatColor.GRAY + "Shuriken");
-    meta.setLore(Arrays.asList(new String[] { ChatColor.GOLD + "Type: " + ChatColor.GRAY + ChatColor.ITALIC + "Linear Projectile", 
-      ChatColor.GOLD + "Damage: " + ChatColor.GRAY + ChatColor.ITALIC + "28 Per Projectile | 3 Projectiles/Shot", 
-      ChatColor.GOLD + "Projectile speed: " + ChatColor.GRAY + ChatColor.ITALIC + "47m/Second", 
+    meta.setDisplayName(ChatColor.BOLD + "" + ChatColor.GRAY + "Ice Blaster");
+    meta.setLore(Arrays.asList(new String[] { ChatColor.GOLD + "Type: " + ChatColor.GRAY + ChatColor.ITALIC + "Beam", 
+      ChatColor.GOLD + "Damage: " + ChatColor.GRAY + ChatColor.ITALIC + "22 - 75", 
+      ChatColor.GOLD + "Projectile speed: " + ChatColor.GRAY + ChatColor.ITALIC + "88.88m/Second", 
       ChatColor.GOLD + "Rate of fire: " + ChatColor.GRAY + ChatColor.ITALIC + "1 Shot/Second", 
-      ChatColor.GOLD + "Ammo: " + ChatColor.GRAY + ChatColor.ITALIC + "24", 
+      ChatColor.GOLD + "Ammo: " + ChatColor.GRAY + ChatColor.ITALIC + "200", 
       ChatColor.GOLD + "Reload time: " + ChatColor.GRAY + ChatColor.ITALIC + "1 Second", 
-      ChatColor.LIGHT_PURPLE + "Description: " + ChatColor.RED + ChatColor.ITALIC + "Mei looses three deadly throwing stars in quick succession!" }));
+      ChatColor.LIGHT_PURPLE + "Description: " + ChatColor.RED + ChatColor.ITALIC + "Mei can also use her blaster to shoot icicle-like projectiles at medium range." }));
     shuriken.setItemMeta(meta);
     return shuriken;
   }
@@ -138,6 +139,7 @@ public class Mei
       }
       if (this.ultimate_charge == 1.0F) {
         this.ultimate_charge = 0.0F;
+        if(Core.t) player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_ENDERMEN_TELEPORT, 1, 1);
         Location loc = e.getPlayer().getLocation();
         ArmorStand amm = player.getWorld().spawn(player.getEyeLocation(), ArmorStand.class);
 	    amm.setVisible(false);
@@ -154,7 +156,7 @@ public class Mei
                 }
                 PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(EnumParticle.WATER_DROP, true, (float)loc.getX(), (float)loc.getY(), (float)loc.getZ(), 8, 4, 8, 100, 80, new int[0]);
                 for(Player p : arena.playerList.keySet()) ((CraftPlayer)p).getHandle().playerConnection.sendPacket(packet);
-                for(Entity en : amm.getNearbyEntities(8, 4, 8)) if(en instanceof Player) addFreeze((Player)en);
+                for(Entity en : amm.getNearbyEntities(8, 4, 8)) if(en instanceof Player) addFreeze((Player)en,true);
 			}
 		}.runTaskTimer(Core.plugin, 0, 5);
       }
@@ -186,9 +188,7 @@ public class Mei
           if (!Mei.this.msg)
           {
             Core.sendTitle(Mei.this.player, Integer.valueOf(5), Integer.valueOf(51), Integer.valueOf(1), ChatColor.GOLD + "ULTIMATE", ChatColor.GREEN + "Ready to launch");
-            if (Core.t) {
-              Mei.this.player.getWorld().playSound(Mei.this.player.getEyeLocation(), Sound.ENTITY_GHAST_WARN, 1.0F, 1.0F);
-            }
+            if(Core.t) player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_ENDERMEN_STARE, 1, 1);
             Mei.this.msg = true;
           }
         }
@@ -210,7 +210,7 @@ public class Mei
   public void explode(EntityExplodeEvent e)
   {
     if (e.getEntity().hasMetadata(this.player.getName())) {
-      e.blockList().clear();
+    	e.blockList().clear();
     }
   }
   
@@ -228,6 +228,7 @@ public class Mei
         this.ultimate_charge = 1.0F;
         if (!this.msg)
         {
+          if(Core.t) player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_ENDERMEN_STARE, 1, 1);
           Core.sendTitle(this.player, Integer.valueOf(5), Integer.valueOf(51), Integer.valueOf(1), ChatColor.GOLD + "ULTIMATE", ChatColor.GREEN + "Ready to launch");
           this.msg = true;
         }
@@ -247,7 +248,7 @@ public class Mei
   {
     if ((e.getPlayer().equals(this.player)) && ((e.getAction() == Action.RIGHT_CLICK_BLOCK) || (e.getAction() == Action.RIGHT_CLICK_AIR)))
     {
-      if ((e.getPlayer().equals(this.player)) && ((this.arena.death.contains(this.player)) || (this.shoot)))
+      if ((e.getPlayer().equals(this.player)) && ((this.arena.death.contains(this.player)) || (this.shoot) || shift || arena.freezed.contains(player)))
       {
         e.setCancelled(true);
         return;
@@ -296,7 +297,7 @@ public class Mei
     }
     else if ((e.getPlayer().equals(this.player)) && ((e.getAction() == Action.LEFT_CLICK_BLOCK) || (e.getAction() == Action.LEFT_CLICK_AIR)))
     {
-      if ((e.getPlayer().equals(this.player)) && ((this.arena.death.contains(this.player)) || (this.shoot)))
+      if ((e.getPlayer().equals(this.player)) && ((this.arena.death.contains(this.player)) || (this.shoot) || shift || arena.freezed.contains(player)))
       {
         e.setCancelled(true);
         return;
@@ -328,7 +329,7 @@ public class Mei
         }.runTaskTimer(Core.plugin, 0L, 1L);
         Entity en = Core.getNearestEntityInSight(player, 8);
         if ((en != null) && ((en instanceof Player))) {
-          addFreeze((Player)en);
+          addFreeze((Player)en,true);
         }
       }
       else
@@ -354,13 +355,13 @@ public class Mei
     }
   }
   
-  public void addFreeze(final Player p)
+  public void addFreeze(final Player p,boolean b)
   {
     if (this.arena.freezed.contains(this.player) && arena.isAlly(p, player)) {
       return;
     }
     p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 90, 1));
-    p.damage(1.0D, this.player);
+    if(b)p.damage(1.0, player);
     if (this.freeze.containsKey(p))
     {
       int level = ((Integer)this.freeze.get(p)).intValue();
@@ -372,9 +373,7 @@ public class Mei
         {
           public void run()
           {
-            if (Mei.this.arena.freezed.contains(Mei.this.player)) {
-              Mei.this.arena.freezed.remove(p);
-            }
+        	  if(start) arena.freezed.remove(p);
           }
         }.runTaskLater(Core.plugin, 40);
       }
@@ -400,13 +399,13 @@ public class Mei
   @EventHandler
   public void move(PlayerMoveEvent e)
   {
-    if ((e.getPlayer().equals(this.player)) && (this.shift) && ((e.getTo().getX() != e.getFrom().getX()) || (e.getTo().getZ() != e.getFrom().getZ()))) {
+    if ((e.getPlayer().equals(this.player)) && (this.shift) && ((e.getTo().getX() != e.getFrom().getX()) || (e.getTo().getZ() != e.getFrom().getZ()) || (e.getTo().getY() != e.getFrom().getY()))) {
       e.setCancelled(true);
     }
     if ((this.freeze.containsKey(e.getPlayer())) && (!e.getPlayer().hasPotionEffect(PotionEffectType.SLOW))) {
       this.freeze.remove(e.getPlayer());
     }
-    if ((this.arena.freezed.contains(e.getPlayer())) && ((e.getTo().getX() != e.getFrom().getX()) || (e.getTo().getZ() != e.getFrom().getZ()))) {
+    if ((arena.freezed.contains(e.getPlayer())) && ((e.getTo().getX() != e.getFrom().getX()) || (e.getTo().getZ() != e.getFrom().getZ()) || (e.getTo().getY() != e.getFrom().getY()))) {
       e.setCancelled(true);
     }
   }
@@ -435,14 +434,14 @@ public class Mei
     if (e.getPlayer().equals(this.player))
     {
       e.setCancelled(true);
-      if ((e.getPlayer().equals(this.player)) && (this.arena.death.contains(this.player)))
+      /*if ((e.getPlayer().equals(this.player)) && (this.arena.death.contains(this.player)))
       {
         e.setCancelled(true);
         return;
       }
       if (!this.player.hasPotionEffect(PotionEffectType.LUCK)) {
         this.player.addPotionEffect(new PotionEffect(PotionEffectType.LUCK, 240, 1));
-      }
+      }*/
     }
   }
   
@@ -451,7 +450,7 @@ public class Mei
   {
     if (e.getPlayer().equals(this.player))
     {
-      if ((e.getPlayer().equals(this.player)) && (this.arena.death.contains(this.player))) {
+      if ((e.getPlayer().equals(this.player)) && (this.arena.death.contains(this.player)) && shift) {
         return;
       }
       if (!this.player.hasPotionEffect(PotionEffectType.UNLUCK))
@@ -468,6 +467,8 @@ public class Mei
         this.player.getLocation().getBlock().setType(Material.ICE);
         this.player.getLocation().add(0.0D, 1.0D, 0.0D).getBlock().setType(Material.ICE);
         this.player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 80, 2));
+        if(Core.t) player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_SPIDER_DEATH, 1, 1);
+        player.teleport(player.getLocation().getBlock().getLocation());
         new BukkitRunnable()
         {
           public void run()
@@ -504,7 +505,8 @@ public class Mei
       }
     }
     else if ((e.getDamager().equals(this.player)) && ((e.getEntity() instanceof Player))) {
-      addFreeze(((Player)e.getEntity()));
+        e.setDamage(1);
+    	addFreeze(((Player)e.getEntity()),false);
     }
   }
   
@@ -516,6 +518,7 @@ public class Mei
     this.player.setLevel((int)((float[])this.arena.expStore.get(this.player))[0]);
     this.player.setExp(((float[])this.arena.expStore.get(this.player))[1]);
     this.player.setAllowFlight(false);
+    this.freeze.clear();
     for (Entity en : this.player.getWorld().getEntities()) {
       if (en.hasMetadata(this.player.getName())) {
         en.remove();

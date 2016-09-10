@@ -23,8 +23,12 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPickupArrowEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status;
@@ -181,6 +185,10 @@ public class Arena implements Listener{
 		}
 	}
 	@EventHandler
+	public void noInteract(PlayerInteractAtEntityEvent e){
+		if(playerList.containsKey(e.getPlayer())) e.setCancelled(true);
+	}
+	@EventHandler
 	public void regionMove(PlayerMoveEvent e){
 		if(!playerList.containsKey(e.getPlayer())) return;
 		if(death.contains(e.getPlayer()) && (e.getFrom().getBlockX() != e.getTo().getBlockX() || e.getFrom().getBlockZ() != e.getTo().getBlockZ())) {
@@ -200,8 +208,20 @@ public class Arena implements Listener{
 		}
 	}
 	@EventHandler
+	public void antiSwitch(PlayerItemHeldEvent e){
+		if(playerList.containsKey(e.getPlayer())) e.setCancelled(true);
+	}
+	@EventHandler
 	public void drop1(PlayerDropItemEvent e){
 		if(playerList.containsKey(e.getPlayer())) e.setCancelled(true);
+	}
+	@EventHandler
+	public void pick4(PlayerPickupArrowEvent e){
+		if(playerList.containsKey(e.getPlayer()))e.setCancelled(true);
+	}
+	@EventHandler
+	public void pick5(PlayerPickupItemEvent e){
+		if(playerList.containsKey(e.getPlayer()))e.setCancelled(true);
 	}
 	@EventHandler
 	public void drop2(InventoryClickEvent e){
@@ -271,7 +291,7 @@ public class Arena implements Listener{
         }
     }
 	public void playerJoin(Player player){
-		player.setResourcePack("https://dl.dropboxusercontent.com/s/gpc6voja8vp009n/OverCraft.zip");
+		player.setResourcePack("https://dl.dropboxusercontent.com/s/mpql5e42o03vkas/OverCraft.zip");
 		player.setHealth(player.getMaxHealth());
 		player.setFoodLevel(20);
 		playerList.put(player, null);
