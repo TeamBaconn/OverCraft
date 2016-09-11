@@ -33,6 +33,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -290,6 +291,10 @@ public class Arena implements Listener{
             connection.sendPacket(packetPlayOutTitle);
         }
     }
+	@EventHandler
+	public void swapAnti(PlayerSwapHandItemsEvent e){
+		if(playerList.containsKey(e.getPlayer())) e.setCancelled(true);
+	}
 	public void playerJoin(Player player){
 		player.setResourcePack("https://dl.dropboxusercontent.com/s/mpql5e42o03vkas/OverCraft.zip");
 		player.setHealth(player.getMaxHealth());
