@@ -296,7 +296,7 @@ public class Arena implements Listener{
 		if(playerList.containsKey(e.getPlayer())) e.setCancelled(true);
 	}
 	public void playerJoin(Player player){
-		player.setResourcePack("https://dl.dropboxusercontent.com/s/mpql5e42o03vkas/OverCraft.zip");
+		player.setResourcePack("https://dl.dropboxusercontent.com/s/3w6m5lh19hhqins/OverCraft.zip");
 		player.setHealth(player.getMaxHealth());
 		player.setFoodLevel(20);
 		playerList.put(player, null);
@@ -390,6 +390,12 @@ public class Arena implements Listener{
 			Location cac = getLocationInfo()[0].clone();
 			Location loz = getLocationInfo()[3].clone();
 			if(team.get(p).equals("BLUE")) p.teleport(cac.add(0,1,0)); else p.teleport(loz.add(0,1,0));
+			p.sendMessage(ChatColor.GRAY+""+ChatColor.UNDERLINE+""+ChatColor.BOLD+"How to use hero's abilities?");
+			p.sendMessage(ChatColor.GREEN+"PASSIVE "+ChatColor.GRAY+"| "+ChatColor.WHITE+" Some heroes don't have it. No key required to press it will active when you at some special certain stage.");
+			p.sendMessage(ChatColor.GREEN+"LEFT_SHIFT "+ChatColor.GRAY+"| "+ChatColor.WHITE+" Toggle/Use shift skill");
+			p.sendMessage(ChatColor.GREEN+"E_KEY "+ChatColor.GRAY+"| "+ChatColor.WHITE+" Toggle/Use E skill");
+			p.sendMessage(ChatColor.GREEN+"Q_KEY "+ChatColor.GRAY+"| "+ChatColor.WHITE+" Use your ultimate when the exp bar charge is full");
+			
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
 			playerList.remove(p);
 			playerList.put(p, new Tracer(p,this));

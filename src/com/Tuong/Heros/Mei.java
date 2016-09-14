@@ -84,9 +84,9 @@ public class Mei
     this.start = true;
     this.reloading = false;
     this.shoot = false;
-    this.ammo = 200;
+    this.ammo = 300;
     this.shift = false;
-    this.shootdamage = 7.5D;
+    this.shootdamage = 5;
     this.maxREGENERATIONth = 25.0D;
     this.freeze = new HashMap<Player,Integer>();
     player.setMaxHealth(this.maxREGENERATIONth);
@@ -105,7 +105,7 @@ public class Mei
       ChatColor.GOLD + "Damage: " + ChatColor.GRAY + ChatColor.ITALIC + "22 - 75", 
       ChatColor.GOLD + "Projectile speed: " + ChatColor.GRAY + ChatColor.ITALIC + "88.88m/Second", 
       ChatColor.GOLD + "Rate of fire: " + ChatColor.GRAY + ChatColor.ITALIC + "1 Shot/Second", 
-      ChatColor.GOLD + "Ammo: " + ChatColor.GRAY + ChatColor.ITALIC + "200", 
+      ChatColor.GOLD + "Ammo: " + ChatColor.GRAY + ChatColor.ITALIC + "300", 
       ChatColor.GOLD + "Reload time: " + ChatColor.GRAY + ChatColor.ITALIC + "1 Second", 
       ChatColor.LIGHT_PURPLE + "Description: " + ChatColor.RED + ChatColor.ITALIC + "Mei can also use her blaster to shoot icicle-like projectiles at medium range." }));
     shuriken.setItemMeta(meta);
@@ -150,7 +150,7 @@ public class Mei
 			@Override
 			public void run() {
                 t++;
-                if(t == 20){
+                if(t == 20 || start == false){
                 	amm.remove();
                 	this.cancel();
                 }
@@ -286,7 +286,7 @@ public class Mei
           public void run()
           {
             e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0F, 1.0F);
-            Mei.this.ammo = 200;
+            Mei.this.ammo = 300;
             if (Mei.this.start) {
               Mei.this.player.setLevel(Mei.this.ammo);
             }
@@ -344,7 +344,7 @@ public class Mei
           public void run()
           {
             e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0F, 1.0F);
-            Mei.this.ammo = 200;
+            Mei.this.ammo = 300;
             if (Mei.this.start) {
               Mei.this.player.setLevel(Mei.this.ammo);
             }
@@ -361,7 +361,7 @@ public class Mei
       return;
     }
     p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 90, 1));
-    if(b)p.damage(1.0, player);
+    if(b) p.damage(1.0, player);
     if (this.freeze.containsKey(p))
     {
       int level = ((Integer)this.freeze.get(p)).intValue();
