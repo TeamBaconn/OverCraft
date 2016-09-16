@@ -157,7 +157,7 @@ public class Core extends JavaPlugin implements Listener{
 									i++;
 									if(i < 0) continue;
 									String[] s = ChatColor.stripColor(st).split(" ");
-									locationInfo[i] = new Location(p.getWorld(),Integer.valueOf(s[0]),Integer.valueOf(s[1]),Integer.valueOf(s[2]));
+									locationInfo[i] = new Location(Bukkit.getWorld(s[3]),Integer.valueOf(s[0]),Integer.valueOf(s[1]),Integer.valueOf(s[2]));
 								}
 								if(arenaManager.createArena(args[1].toString(), locationInfo, numbericInfo)) p.sendMessage(prefix+ChatColor.GREEN+"Create arena "+ChatColor.GOLD+args[1].toString() + ChatColor.GREEN+" done!");
 								else p.sendMessage(prefix+ChatColor.RED+"Create arena "+ChatColor.GOLD+args[1].toString()+ChatColor.RED+" failed!");
@@ -379,7 +379,7 @@ public class Core extends JavaPlugin implements Listener{
 					}else {
 						e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set upper region for capture point "+((lore.size()-8)/2+1));
 					}
-					lore.add(ChatColor.GOLD+""+e.getClickedBlock().getX() + " " + e.getClickedBlock().getY() + " " + e.getClickedBlock().getZ());
+					lore.add(ChatColor.GOLD+""+e.getClickedBlock().getX() + " " + e.getClickedBlock().getY() + " " + e.getClickedBlock().getZ() + " " + e.getClickedBlock().getWorld().getName());
 					mt.setLore(lore);
 					e.getPlayer().getInventory().getItemInMainHand().setItemMeta(mt);
 				} else if((e.getAction() == Action.RIGHT_CLICK_BLOCK || e.getAction() == Action.RIGHT_CLICK_AIR) && e.getPlayer().getInventory().getItemInMainHand().getItemMeta().getLore().size() > 1) {
