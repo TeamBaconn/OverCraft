@@ -26,6 +26,7 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -237,7 +238,7 @@ public class Tracer implements Listener{
 	
 	@EventHandler
 	public void shoot(PlayerInteractEvent e){
-		if(e.getPlayer().equals(player) && arena.death.contains(player)) {
+		if(e.getPlayer().equals(player) && (arena.death.contains(player) || reloading)) {
 			e.setCancelled(true);
 			return;
 		}
@@ -296,7 +297,21 @@ public class Tracer implements Listener{
 			}
 		}
 	}
-	
+	@EventHandler
+	public void switchItem(PlayerSwapHandItemsEvent e){
+		e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_WOOD_BUTTON_CLICK_OFF, 1, 1);
+		if(reloading) return;
+		reloading = true;
+		new BukkitRunnable() {
+			@Override
+			public void run() {
+				e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1, 1);
+				ammo = 40;
+				if(start)player.setLevel(ammo);
+				reloading = false;
+			}
+		}.runTaskLater(Core.plugin, 20);
+	}
 	@EventHandler
 	public void bomb(PlayerDropItemEvent e){
 		if(e.getPlayer().equals(player)){

@@ -30,6 +30,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -248,7 +249,7 @@ public class Mei
   {
     if ((e.getPlayer().equals(this.player)) && ((e.getAction() == Action.RIGHT_CLICK_BLOCK) || (e.getAction() == Action.RIGHT_CLICK_AIR)))
     {
-      if ((e.getPlayer().equals(this.player)) && ((this.arena.death.contains(this.player)) || (this.shoot) || shift || arena.freezed.contains(player)))
+      if ((e.getPlayer().equals(this.player)) && ((this.arena.death.contains(this.player)) || (this.shoot) || shift || arena.freezed.contains(player) || reloading))
       {
         e.setCancelled(true);
         return;
@@ -297,7 +298,7 @@ public class Mei
     }
     else if ((e.getPlayer().equals(this.player)) && ((e.getAction() == Action.LEFT_CLICK_BLOCK) || (e.getAction() == Action.LEFT_CLICK_AIR)))
     {
-      if ((e.getPlayer().equals(this.player)) && ((this.arena.death.contains(this.player)) || (this.shoot) || shift || arena.freezed.contains(player)))
+      if ((e.getPlayer().equals(this.player)) && ((this.arena.death.contains(this.player)) || (this.shoot) || shift || arena.freezed.contains(player) || reloading))
       {
         e.setCancelled(true);
         return;
@@ -354,7 +355,26 @@ public class Mei
       }
     }
   }
-  
+  @EventHandler 
+  public void antiSwap(PlayerSwapHandItemsEvent e){
+	  e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_WOOD_BUTTON_CLICK_OFF, 1.0F, 1.0F);
+      if (this.reloading) {
+        return;
+      }
+      this.reloading = true;
+      new BukkitRunnable()
+      {
+        public void run()
+        {
+          e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0F, 1.0F);
+          Mei.this.ammo = 300;
+          if (Mei.this.start) {
+            Mei.this.player.setLevel(Mei.this.ammo);
+          }
+          Mei.this.reloading = false;
+        }
+      }.runTaskLater(Core.plugin, 25L);
+  }
   public void addFreeze(final Player p,boolean b)
   {
     if (this.arena.freezed.contains(this.player) && arena.isAlly(p, player)) {

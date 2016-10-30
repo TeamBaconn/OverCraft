@@ -28,6 +28,7 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -182,7 +183,7 @@ public class Roadhog implements Listener{
 	public void shoot(PlayerInteractEvent e){
 		if(e.getPlayer().equals(player) && (e.getAction() == Action.RIGHT_CLICK_BLOCK || e.getAction() == Action.RIGHT_CLICK_AIR)){
 			e.setCancelled(true);
-			if(e.getPlayer().equals(player) && arena.death.contains(player)) return;
+			if(e.getPlayer().equals(player) && (arena.death.contains(player) || reloading)) return;
 			if(ammo > 0){
 				float accuracy = 0.2F;
 				for(int i = 0; i < 10; i++){
@@ -211,6 +212,21 @@ public class Roadhog implements Listener{
 				}.runTaskLater(Core.plugin, 20);
 			}
 		}
+	}
+	@EventHandler
+	public void antiSwap(PlayerSwapHandItemsEvent e){
+		e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_WOOD_BUTTON_CLICK_OFF, 1, 1);
+		if(reloading) return;
+		reloading = true;
+		new BukkitRunnable() {
+			@Override
+			public void run() {
+				e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1, 1);
+				ammo = 4;
+				if(start) player.setLevel(ammo);
+				reloading = false;
+			}
+		}.runTaskLater(Core.plugin, 20);
 	}
 	@EventHandler
 	public void rekall(PlayerItemHeldEvent e){

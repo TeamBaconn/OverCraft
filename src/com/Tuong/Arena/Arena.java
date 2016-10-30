@@ -125,7 +125,7 @@ public class Arena implements Listener{
 		time.setDisplayName(ChatColor.WHITE+""+ChatColor.BOLD+"OVER"+ChatColor.GOLD+""+ChatColor.BOLD+"CRAFT");
 		Score blank = time.getScore(ChatColor.GRAY+"~~~~~~~~~~~~~~~~~~");
 		blank.setScore(15);
-		Score player = time.getScore(ChatColor.RED+""+ChatColor.BOLD+"» "+ChatColor.YELLOW+""+ChatColor.BOLD+"Player Info:");
+		Score player = time.getScore(ChatColor.RED+""+ChatColor.BOLD+"ï¿½ "+ChatColor.YELLOW+""+ChatColor.BOLD+"Player Info:");
 		player.setScore(14);
 		Score player_info1 = time.getScore(ChatColor.GRAY+"Name: "+ChatColor.WHITE+p.getName());
 		player_info1.setScore(12);
@@ -138,7 +138,7 @@ public class Arena implements Listener{
 		if(i == 1){
 			Score player_info3 = time.getScore(ChatColor.GRAY+"Hero: "+ChatColor.WHITE+hero(p));
 			player_info3.setScore(10);
-			Score game = time.getScore(ChatColor.RED+""+ChatColor.BOLD+"» "+ChatColor.YELLOW+""+ChatColor.BOLD+"Game Info:");
+			Score game = time.getScore(ChatColor.RED+""+ChatColor.BOLD+"ï¿½ "+ChatColor.YELLOW+""+ChatColor.BOLD+"Game Info:");
 			game.setScore(8);
 			String timer = "";
 			if(second/60 > 9) timer = String.valueOf(second/60); else timer = "0"+String.valueOf(second/60);
@@ -155,7 +155,7 @@ public class Arena implements Listener{
 			blank2.setScore(4);
 		}
 		int[] t = getTeamSize();
-		Score arena = time.getScore(ChatColor.RED+""+ChatColor.BOLD+"» "+ChatColor.YELLOW+""+ChatColor.BOLD+"Arena Info:");
+		Score arena = time.getScore(ChatColor.RED+""+ChatColor.BOLD+"ï¿½ "+ChatColor.YELLOW+""+ChatColor.BOLD+"Arena Info:");
 		arena.setScore(3);
 		Score arena_1 = time.getScore(ChatColor.GRAY+"Arena: "+ChatColor.WHITE+getArenaName());
 		arena_1.setScore(2);
@@ -189,11 +189,14 @@ public class Arena implements Listener{
 	public void noInteract(PlayerInteractAtEntityEvent e){
 		if(playerList.containsKey(e.getPlayer())) e.setCancelled(true);
 	}
+	public void sendMessage(Player p, int num){
+		p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message."+num).replace("%PLAYER%", p.getName()).replace("%ARENA%", Core.arenaManager.inArena(p).arenaName)));
+	}
 	@EventHandler
 	public void regionMove(PlayerMoveEvent e){
 		if(!playerList.containsKey(e.getPlayer())) return;
 		if(death.contains(e.getPlayer()) && (e.getFrom().getBlockX() != e.getTo().getBlockX() || e.getFrom().getBlockZ() != e.getTo().getBlockZ())) {
-			e.getPlayer().sendMessage(ChatColor.RED+"You are recovering from the death!");
+			sendMessage(e.getPlayer(),1);
 			e.setCancelled(true);
 		}
 		Location to = e.getTo();
@@ -235,18 +238,18 @@ public class Arena implements Listener{
 					if(t[0] - 1 > 0 && t[0]+3 > t[1]){
 						team.remove(e.getWhoClicked());
 						team.put((Player) e.getWhoClicked(), "BLUE");
-						e.getWhoClicked().sendMessage(Core.prefix+ChatColor.GRAY+"You joined team "+ChatColor.BLUE +" BLUE");
+						sendMessage((Player) e.getWhoClicked(), 2);
 						for(Player p : playerList.keySet()) update(p,0);
-					}else e.getWhoClicked().sendMessage(Core.prefix+ChatColor.RED+"You can't join that team");
+					}else sendMessage((Player) e.getWhoClicked(), 4);
 					e.getWhoClicked().closeInventory();
 				}else if(ChatColor.stripColor(e.getCurrentItem().getItemMeta().getDisplayName()).contains("Red")){
 					int[] t = getTeamSize();
 					if(t[1] - 1 > 0 && t[1]+3 > t[0]){
 						team.remove(e.getWhoClicked());
 						team.put((Player) e.getWhoClicked(), "RED");
-						e.getWhoClicked().sendMessage(Core.prefix+ChatColor.GRAY+"You joined team "+ChatColor.RED +" RED");
+						sendMessage((Player) e.getWhoClicked(), 3);
 						for(Player p : playerList.keySet()) update(p,0);
-					}else e.getWhoClicked().sendMessage(Core.prefix+ChatColor.RED+"You can't join that team");
+					}else sendMessage((Player) e.getWhoClicked(), 4);
 					e.getWhoClicked().closeInventory();
 				}
 				}
@@ -259,11 +262,11 @@ public class Arena implements Listener{
 	public void playerOut(PlayerQuitEvent e){
 		if(playerList.containsKey(e.getPlayer())){
 			playerLeave(e.getPlayer());			
-			broadcast(ChatColor.RED+"Player "+ChatColor.GOLD+e.getPlayer().getName()+ChatColor.RED+" left the game");
+			broadcast(5);
 		}
 	}
-	public void broadcast(String message){
-		for(Player p : playerList.keySet()) p.sendMessage(Core.prefix+message);
+	public void broadcast(int i){
+		for(Player p : playerList.keySet()) sendMessage(p, i);
 	}
 	public void broadcast2(String message,String message2){
 		for(Player p : playerList.keySet()) {
@@ -296,7 +299,7 @@ public class Arena implements Listener{
 		if(playerList.containsKey(e.getPlayer())) e.setCancelled(true);
 	}
 	public void playerJoin(Player player){
-		player.setResourcePack("https://dl.dropboxusercontent.com/s/3w6m5lh19hhqins/OverCraft.zip");
+		player.setResourcePack("https://dl.dropboxusercontent.com/s/vlptjhaogdl3cbz/Overwatch.zip");
 		player.setHealth(player.getMaxHealth());
 		player.setFoodLevel(20);
 		playerList.put(player, null);
@@ -313,9 +316,7 @@ public class Arena implements Listener{
 		expStore.put(player, g);
 		int[] t = getTeamSize();
 		if(t[0] > t[1]) team.put(player, "RED"); else team.put(player, "BLUE");
-		ChatColor color;
-		if(team.get(player).equals("BLUE")) color = ChatColor.BLUE; else color = ChatColor.RED; 
-		player.sendMessage(Core.prefix+ChatColor.GREEN+"Join arena "+ChatColor.GOLD+getArenaName()+ChatColor.GREEN+" on "+ color+team.get(player)+ChatColor.GREEN +" team");
+		if(team.get(player).equals("BLUE")) sendMessage(player, 7); else sendMessage(player,6); 
 		if(playerList.size() >= getNumbericInfo()[0] && iscount == false) {
 			iscount = true;
 			countDown();
@@ -325,27 +326,27 @@ public class Arena implements Listener{
 	@EventHandler
 	public void texturePack(PlayerResourcePackStatusEvent e){
 		if(playerList.containsKey(e.getPlayer())){
-			if(e.getStatus() == Status.DECLINED) e.getPlayer().sendMessage(Core.prefix+ChatColor.RED+"You denied resource pack download which you may not have full experience of the game");			
-			if(e.getStatus() == Status.ACCEPTED) e.getPlayer().sendMessage(Core.prefix+ChatColor.GREEN+"Downloading resource pack...");
-			if(e.getStatus() == Status.SUCCESSFULLY_LOADED)e.getPlayer().sendMessage(Core.prefix+ChatColor.GOLD+"Downloading resource pack done!");
-			if(e.getStatus() == Status.FAILED_DOWNLOAD)e.getPlayer().sendMessage(Core.prefix+ChatColor.GRAY+"Downloading resource pack fail!");
+			if(e.getStatus() == Status.DECLINED) sendMessage(e.getPlayer(), 20);
+			if(e.getStatus() == Status.ACCEPTED) sendMessage(e.getPlayer(), 21);
+			if(e.getStatus() == Status.SUCCESSFULLY_LOADED) sendMessage(e.getPlayer(), 22);
+			if(e.getStatus() == Status.FAILED_DOWNLOAD) sendMessage(e.getPlayer(), 23);
 		}
 	}
 	public void countDown(){
-		broadcast(ChatColor.GREEN+"Count down started...");
+		broadcast(8);
 		new BukkitRunnable() {
 			int t = 8;
 			@Override
 			public void run() {
 				if(iscount == false){
-					broadcast(ChatColor.RED+"Count down stop because not enough players");
+					broadcast(9);
 					this.cancel();
 				}
-				if(t != 0) broadcast2(ChatColor.GREEN+"Game about to start in ",ChatColor.GOLD+""+t+" second");
+				if(t != 0) broadcast2(ChatColor.translateAlternateColorCodes('&', (Core.plugin.getConfig().getString("Message.10").replace("%TIME%", String.valueOf(t)))),"");
 				for(Player p : playerList.keySet()) p.getWorld().playSound(p.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1, 1);
 				if(t <= 0 && start == false) {
 					start = true;
-					broadcast2(ChatColor.GOLD+"!Lets the game started!","");
+					broadcast2(ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.11")),"");
 					play();
 					this.cancel();
 				}
@@ -390,22 +391,17 @@ public class Arena implements Listener{
 			Location cac = getLocationInfo()[0].clone();
 			Location loz = getLocationInfo()[3].clone();
 			if(team.get(p).equals("BLUE")) p.teleport(cac.add(0,1,0)); else p.teleport(loz.add(0,1,0));
-			p.sendMessage(ChatColor.GRAY+""+ChatColor.UNDERLINE+""+ChatColor.BOLD+"How to use hero's abilities?");
-			p.sendMessage(ChatColor.GREEN+"PASSIVE "+ChatColor.GRAY+"| "+ChatColor.WHITE+" Some heroes don't have it. No key required to press it will active when you at some special certain stage.");
-			p.sendMessage(ChatColor.GREEN+"LEFT_SHIFT "+ChatColor.GRAY+"| "+ChatColor.WHITE+" Toggle/Use shift skill");
-			p.sendMessage(ChatColor.GREEN+"E_KEY "+ChatColor.GRAY+"| "+ChatColor.WHITE+" Toggle/Use E skill");
-			p.sendMessage(ChatColor.GREEN+"Q_KEY "+ChatColor.GRAY+"| "+ChatColor.WHITE+" Use your ultimate when the exp bar charge is full");
-			
+			for(int i = 24; i<= 29;i++)sendMessage(p, i);
 			p.getWorld().playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
 			playerList.remove(p);
 			playerList.put(p, new Tracer(p,this));
 			//add default hero
 			boss.addPlayer(p);
-			if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.BLUE+"Defend objective "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLUE+" at"+ChatColor.GREEN+" x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()); 
-			else p.sendMessage(Core.prefix+ChatColor.RED+"Attack objective "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLUE+" at"+ChatColor.GREEN+" x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()); 
+			if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
+			else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
 		}
 		boss.setVisible(true);
-		broadcast(ChatColor.GREEN+"Teleport to arena");
+		broadcast(12);
 		new BukkitRunnable() {
 			@Override
 			public void run() {
@@ -414,11 +410,11 @@ public class Arena implements Listener{
 						//win
 						for(Player p : playerList.keySet()) {
 							if(team.get(p).equals("RED")) {
-								sendTitle(p, 20, 60, 25, ChatColor.GOLD+"You won!", "");
-								p.sendMessage(Core.prefix +ChatColor.GREEN+ "You won the game on arena "+ChatColor.GOLD+getArenaName());
+								sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
+								sendMessage(p, 13);
 							}else{
-								sendTitle(p, 20, 60, 25, ChatColor.GRAY+"You lost!", "");
-								p.sendMessage(Core.prefix +ChatColor.GRAY+ "You lost the game on arena "+ChatColor.GOLD+getArenaName());
+								sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.16")), "");
+								sendMessage(p, 14);
 							}
 						}
 						refresh();
@@ -429,8 +425,8 @@ public class Arena implements Listener{
 					msg = false;
 					second += maxsecond;
 					captureObjective++;
-					for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.BLUE+"Defend objective "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLUE+" at"+ChatColor.GREEN+" x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()); 
-					else p.sendMessage(Core.prefix+ChatColor.RED+"Attack objective "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLUE+" at"+ChatColor.GREEN+" x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()); 
+					for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
+					else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
 				}
 				boolean b = false;
 				if(capturePoint[captureObjective] < 0) capturePoint[captureObjective] = 0;
@@ -459,11 +455,11 @@ public class Arena implements Listener{
 							//win
 							for(Player p : playerList.keySet()) {
 								if(team.get(p).equals("RED")) {
-									sendTitle(p, 20, 60, 25, ChatColor.GOLD+"You won!", "");
-									p.sendMessage(Core.prefix +ChatColor.GREEN+ "You won the game on arena "+ChatColor.GOLD+getArenaName());
+									sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
+									sendMessage(p, 13);
 								}else{
-									sendTitle(p, 20, 60, 25, ChatColor.GRAY+"You lost!", "");
-									p.sendMessage(Core.prefix +ChatColor.GRAY+ "You lost the game on arena "+ChatColor.GOLD+getArenaName());
+									sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.16")), "");
+									sendMessage(p, 14);
 								}
 							}
 							refresh();
@@ -474,18 +470,18 @@ public class Arena implements Listener{
 						msg = false;
 						second += maxsecond;
 						captureObjective++;
-						for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.BLUE+"Defend objective "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLUE+" at"+ChatColor.GREEN+" x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()); 
-						else p.sendMessage(Core.prefix+ChatColor.RED+"Attack objective "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLUE+" at"+ChatColor.GREEN+" x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()); 
+						for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
+						else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
 					}
 				}else if(second <= 0 && b == false){
 					//win
 					for(Player p : playerList.keySet()) {
 						if(team.get(p).equals("BLUE")) {
-							sendTitle(p, 20, 60, 25, ChatColor.GOLD+"You won!", "");
-							p.sendMessage(Core.prefix +ChatColor.GREEN+ "You won the game on arena "+ChatColor.GOLD+getArenaName());
+							sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
+							sendMessage(p, 13);
 						}else{
-							sendTitle(p, 20, 60, 25, ChatColor.GRAY+"You lost!", "");
-							p.sendMessage(Core.prefix +ChatColor.GRAY+ "You lost the game on arena "+ChatColor.GOLD+getArenaName());
+							sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.16")), "");
+							sendMessage(p, 14);
 						}
 					}
 					refresh();
@@ -499,8 +495,8 @@ public class Arena implements Listener{
 				int[] t = getTeamSize();
 				if(t[0] == 0 || t[1] == 0){
 					for(Player p : playerList.keySet()) {
-						sendTitle(p, 20, 60, 25, ChatColor.GOLD+"You won!", "");
-						p.sendMessage(Core.prefix +ChatColor.GREEN+ "You won the game on arena "+ChatColor.GOLD+getArenaName());
+						sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
+						sendMessage(p, 13);
 					}
 					//cancel
 					refresh();
@@ -512,11 +508,11 @@ public class Arena implements Listener{
 						//win
 						for(Player p : playerList.keySet()) {
 							if(team.get(p).equals("RED")) {
-								sendTitle(p, 20, 60, 25, ChatColor.GOLD+"You won!", "");
-								p.sendMessage(Core.prefix +ChatColor.GREEN+ "You won the game on arena "+ChatColor.GOLD+getArenaName());
+								sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
+								sendMessage(p, 13);
 							}else{
-								sendTitle(p, 20, 60, 25, ChatColor.GRAY+"You lost!", "");
-								p.sendMessage(Core.prefix +ChatColor.GRAY+ "You lost the game on arena "+ChatColor.GOLD+getArenaName());
+								sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.16")), "");
+								sendMessage(p, 14);
 							}
 						}
 						refresh();
@@ -544,6 +540,7 @@ public class Arena implements Listener{
 		if(e.getPlayer().getInventory().getItemInMainHand().equals(Core.getTeamCompass())) e.getPlayer().openInventory(Core.getTeamInventory());
 	}
 	public void playerLeave(Player player){
+		player.setWalkSpeed(0.2F);
 		classRemove(player);
 		player.getScoreboard().clearSlot(DisplaySlot.SIDEBAR);
 		player.setHealth(player.getMaxHealth());
@@ -554,7 +551,7 @@ public class Arena implements Listener{
 		if(armorStore.containsKey(player))player.getInventory().setArmorContents(armorStore.get(player));
 		Location cac = getLocationInfo()[7].clone();
 		player.teleport(cac.add(0,1,0));
-		player.sendMessage(Core.prefix+ChatColor.GRAY+"Leave arena "+ChatColor.GOLD+getArenaName());
+		sendMessage(player, 19);
 		playerList.remove(player);
 		team.remove(player);
 		player.setMaxHealth(20);

@@ -26,6 +26,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -143,18 +144,24 @@ public class Lucio implements Listener{
 				if(start) player.setLevel(ammo);
 				if(start) player.setExp(ultimate_charge);
 				int t = 0,d = 0;
+				float c = 0;
 				if(boost){
 					boost = false;
 					t = 4;
 					d = 28;
+					c = 0.1F;
 				}
-				if(speed) player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 52+d, 0+t));
-				else player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 52+d, 0+t));
+				if(speed) player.setWalkSpeed(0.4F+c);
+				else {
+					player.setWalkSpeed(0.2F);
+					player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 52+d, 0+t));
+				}
 				for(Entity en : player.getNearbyEntities(15, 15, 15)) if(en instanceof Player && arena.playerList.containsKey((Player)en) && arena.isAlly((Player)en, player)){
 					if(speed) {
-						((Player)en).addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 52+d, 0+t));
+						((Player)en).setWalkSpeed(0.4F+c);
 					} else {
 						((Player)en).addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 52+d, 0+t));
+						((Player)en).setWalkSpeed(0.2F);
 					}
 					if(ultimate_charge + 0.002 >= 1){
 						ultimate_charge = 1;
@@ -254,7 +261,7 @@ public class Lucio implements Listener{
 	@EventHandler
 	public void shoot(PlayerInteractEvent e){
 		if(e.getPlayer().equals(player) && (e.getAction() == Action.RIGHT_CLICK_BLOCK || e.getAction() == Action.RIGHT_CLICK_AIR)){
-			if(e.getPlayer().equals(player) && (arena.death.contains(player) || shoot)) {
+			if(e.getPlayer().equals(player) && (arena.death.contains(player) || shoot || reloading)) {
 				e.setCancelled(true);
 				return;
 			}
@@ -293,6 +300,21 @@ public class Lucio implements Listener{
 				}.runTaskLater(Core.plugin, 25);
 			}
 		}
+	}
+	@EventHandler
+	public void antiSwap(PlayerSwapHandItemsEvent e){
+		e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_WOOD_BUTTON_CLICK_OFF, 1, 1);
+		if(reloading) return;
+		reloading = true;
+		new BukkitRunnable() {
+			@Override
+			public void run() {
+				e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1, 1);
+				ammo = 20;
+				if(start) player.setLevel(ammo);
+				reloading = false;
+			}
+		}.runTaskLater(Core.plugin, 25);
 	}
 	@EventHandler
 	public void rekall(PlayerItemHeldEvent e){

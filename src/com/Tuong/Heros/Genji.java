@@ -34,6 +34,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
@@ -216,7 +217,7 @@ public class Genji implements Listener{
 	@EventHandler
 	public void shoot(PlayerInteractEvent e){
 		if(e.getPlayer().equals(player) && (e.getAction() == Action.RIGHT_CLICK_BLOCK || e.getAction() == Action.RIGHT_CLICK_AIR)){
-			if(e.getPlayer().equals(player) && (arena.death.contains(player) || reflect || ultimate || shoot)) {
+			if(e.getPlayer().equals(player) && (arena.death.contains(player) || reflect || ultimate || shoot || reloading)) {
 				e.setCancelled(true);
 				return;
 			}
@@ -254,7 +255,7 @@ public class Genji implements Listener{
 				}.runTaskLater(Core.plugin, 25);
 			}
 		}else if(e.getPlayer().equals(player) && (e.getAction() == Action.LEFT_CLICK_BLOCK || e.getAction() == Action.LEFT_CLICK_AIR)){
-			if(e.getPlayer().equals(player) && (arena.death.contains(player) || reflect || ultimate || shoot)) {
+			if(e.getPlayer().equals(player) && (arena.death.contains(player) || reflect || ultimate || shoot || reloading)) {
 				e.setCancelled(true);
 				return;
 			}
@@ -283,6 +284,21 @@ public class Genji implements Listener{
 				}.runTaskLater(Core.plugin, 25);
 			}
 		}
+	}
+	@EventHandler
+	public void antiSwap(PlayerSwapHandItemsEvent e){
+		e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_WOOD_BUTTON_CLICK_OFF, 1, 1);
+		if(reloading) return;
+		reloading = true;
+		new BukkitRunnable() {
+			@Override
+			public void run() {
+				e.getPlayer().getWorld().playSound(e.getPlayer().getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1, 1);
+				ammo = 24;
+				if(start) player.setLevel(ammo);
+				reloading = false;
+			}
+		}.runTaskLater(Core.plugin, 25);
 	}
 	@EventHandler
 	public void click(InventoryClickEvent e){

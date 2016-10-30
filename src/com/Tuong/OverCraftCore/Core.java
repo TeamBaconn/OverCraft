@@ -70,6 +70,39 @@ public class Core extends JavaPlugin implements Listener{
 		getConfig().addDefault("Sound.Enable", true);
 		getConfig().addDefault("DefaultSecondsToCapture", 300);
 		getConfig().addDefault("DefaultPointsToCapture", 200);
+		getConfig().addDefault("Message.1", "&cYou are recovering from the death!");
+		getConfig().addDefault("Message.2", "&7You joined team &9BLUE");
+		getConfig().addDefault("Message.3", "&7You joined team &cRED");
+		getConfig().addDefault("Message.4", "&cYou can't join that team");
+		getConfig().addDefault("Message.5", "&cPlayer &6%PLAYER% &cleft the game");
+		getConfig().addDefault("Message.6", "&aJoin arena &6%ARENA% &aon &cRED &ateam");
+		getConfig().addDefault("Message.7", "&aJoin arena &6%ARENA% &aon &9BLUE &ateam");
+		getConfig().addDefault("Message.8", "&aCount down started....");
+		getConfig().addDefault("Message.9", "&cCount down stop because not enough players");
+		getConfig().addDefault("Message.10", "&aGame about to start in &6%TIME% &a second(s)");
+		getConfig().addDefault("Message.11", "&6!Lets the game started!");
+		getConfig().addDefault("Message.12", "&aTeleported to arena.");
+		getConfig().addDefault("Message.13", "&aYou won the game on arena &6%ARENA%");
+		getConfig().addDefault("Message.14", "&7You lost the game on arena &6%ARENA%");
+		getConfig().addDefault("Message.15", "&6You won");
+		getConfig().addDefault("Message.16", "&7You lost");
+		getConfig().addDefault("Message.17", "&9Defend objective");
+		getConfig().addDefault("Message.18", "&cAttack objective");
+		getConfig().addDefault("Message.19", "&7Leave arena &6%ARENA%");
+		getConfig().addDefault("Message.20", "&cYou denied resource pack download which you may not have full experience of the game");
+		getConfig().addDefault("Message.21", "&aDownloading resource pack...");
+		getConfig().addDefault("Message.22", "&6Downloading resource pack done!");
+		getConfig().addDefault("Message.23", "&cDownloading resource pack failed!");
+		getConfig().addDefault("Message.24", "&7&n&lHow to use hero's abilities?");
+		getConfig().addDefault("Message.25", "&aPASSIVE &7| &fSome heroes don't have it. No key required to press it will active when you at some special certain stage.");
+		getConfig().addDefault("Message.26", "&aLEFT_SHIFT &7| &fToggle/Use shift skill");
+		getConfig().addDefault("Message.27", "&aE_KEY &7| &fToggle/Use E skill");
+		getConfig().addDefault("Message.28", "&aQ_KEY &7| &fUse your ultimate when the exp bar charge is full");
+		getConfig().addDefault("Message.29", "&aF_KEY &7| &fReload your weapon");
+		getConfig().addDefault("Message.30", "&cYou must be in your spawn area to do that");
+		getConfig().addDefault("Message.31", "&cYou're not in an arena or arena not started yet");
+		getConfig().addDefault("Message.32", "&cYou don't have permission to use &d%CLASS% class");
+		
 		saveConfig();
 		t = getConfig().getBoolean("Sound.Enable");
 		maxsecond = getConfig().getInt("DefaultSecondsToCapture");
@@ -168,16 +201,16 @@ public class Core extends JavaPlugin implements Listener{
 							return false;
 						}
 					}else{
-						p.sendMessage(ChatColor.BLUE+""+ChatColor.BOLD+"»»»»»»»»»»»"+ChatColor.WHITE+""+ChatColor.BOLD+"Over"+ChatColor.GOLD+""+ChatColor.BOLD+"Craft"+ChatColor.BLUE+""+ChatColor.BOLD+"»»»»»»»»»»»");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"› "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"create "+ChatColor.WHITE+" <arena_name> <min_player_to_start> <max_player> <number_of_capture_points>" +ChatColor.GRAY+" - This command require a wand with a set of locations to get the wand use command below and permission "+ChatColor.LIGHT_PURPLE +"oc.admin");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"› "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"wand"+ChatColor.GRAY+" - Give you a wand with instruction, left click block to save location and right click block to remove location, require"+ChatColor.LIGHT_PURPLE+" oc.admin"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"› "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"remove "+ChatColor.WHITE+" <arena_name_to_remove>"+ChatColor.GRAY+" - Remove an arena require"+ChatColor.LIGHT_PURPLE+" oc.admin"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"› "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"list"+ChatColor.GRAY+" - Open a list of arenas require permission"+ChatColor.LIGHT_PURPLE+" oc.list");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"› "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"autojoin"+ChatColor.GRAY+" - Auto join an arena best use for sorting player require"+ChatColor.LIGHT_PURPLE+" oc.autojoin"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"› "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"join "+ChatColor.WHITE+"<arene_name>"+ChatColor.GRAY+" - Join arena require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"› "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"leave"+ChatColor.GRAY+" - Leave arena require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"› "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"class "+ChatColor.WHITE+"<class_name>"+ChatColor.GRAY+" - Choose hero class require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.BLUE+""+ChatColor.BOLD+"»»»»»»»»»»»»»»»»»»»»»»»»»»»»»»»");
+						p.sendMessage(ChatColor.BLUE+""+ChatColor.BOLD+"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"+ChatColor.WHITE+""+ChatColor.BOLD+"Over"+ChatColor.GOLD+""+ChatColor.BOLD+"Craft"+ChatColor.BLUE+""+ChatColor.BOLD+"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"ï¿½ "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"create "+ChatColor.WHITE+" <arena_name> <min_player_to_start> <max_player> <number_of_capture_points>" +ChatColor.GRAY+" - This command require a wand with a set of locations to get the wand use command below and permission "+ChatColor.LIGHT_PURPLE +"oc.admin");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"ï¿½ "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"wand"+ChatColor.GRAY+" - Give you a wand with instruction, left click block to save location and right click block to remove location, require"+ChatColor.LIGHT_PURPLE+" oc.admin"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"ï¿½ "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"remove "+ChatColor.WHITE+" <arena_name_to_remove>"+ChatColor.GRAY+" - Remove an arena require"+ChatColor.LIGHT_PURPLE+" oc.admin"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"ï¿½ "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"list"+ChatColor.GRAY+" - Open a list of arenas require permission"+ChatColor.LIGHT_PURPLE+" oc.list");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"ï¿½ "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"autojoin"+ChatColor.GRAY+" - Auto join an arena best use for sorting player require"+ChatColor.LIGHT_PURPLE+" oc.autojoin"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"ï¿½ "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"join "+ChatColor.WHITE+"<arene_name>"+ChatColor.GRAY+" - Join arena require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"ï¿½ "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"leave"+ChatColor.GRAY+" - Leave arena require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"ï¿½ "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"class "+ChatColor.WHITE+"<class_name>"+ChatColor.GRAY+" - Choose hero class require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.BLUE+""+ChatColor.BOLD+"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
 						return false;
 					}
 				}if(args.length >= 1) if(p.hasPermission("oc.list") && args[0].equals("list")){
@@ -197,7 +230,7 @@ public class Core extends JavaPlugin implements Listener{
 								case "genji":
 									if(!p.hasPermission("oc.class."+args[1].toLowerCase())) {
 										if(!p.hasPermission("oc.class.all")){
-											p.sendMessage(prefix + ChatColor.RED+"You don't have permission to use "+ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED+" class");
+											p.sendMessage(prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.32")).replace("%CLASS%",ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED));
 											break;
 										}
 									}
@@ -208,7 +241,7 @@ public class Core extends JavaPlugin implements Listener{
 								case "hanzo":
 									if(!p.hasPermission("oc.class."+args[1].toLowerCase())) {
 										if(!p.hasPermission("oc.class.all")){
-											p.sendMessage(prefix + ChatColor.RED+"You don't have permission to use "+ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED+" class");
+											p.sendMessage(prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.32")).replace("%CLASS%",ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED));
 											break;
 										}
 									}
@@ -219,7 +252,7 @@ public class Core extends JavaPlugin implements Listener{
 								case "mei":
 									if(!p.hasPermission("oc.class."+args[1].toLowerCase())) {
 										if(!p.hasPermission("oc.class.all")){
-											p.sendMessage(prefix + ChatColor.RED+"You don't have permission to use "+ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED+" class");
+											p.sendMessage(prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.32")).replace("%CLASS%",ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED));
 											break;
 										}
 									}
@@ -230,7 +263,7 @@ public class Core extends JavaPlugin implements Listener{
 								case "tracer":
 									if(!p.hasPermission("oc.class."+args[1].toLowerCase())) {
 										if(!p.hasPermission("oc.class.all")){
-											p.sendMessage(prefix + ChatColor.RED+"You don't have permission to use "+ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED+" class");
+											p.sendMessage(prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.32")).replace("%CLASS%",ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED));
 											break;
 										}
 									}
@@ -241,7 +274,7 @@ public class Core extends JavaPlugin implements Listener{
 								case "roadhog":
 									if(!p.hasPermission("oc.class."+args[1].toLowerCase())) {
 										if(!p.hasPermission("oc.class.all")){
-											p.sendMessage(prefix + ChatColor.RED+"You don't have permission to use "+ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED+" class");
+											p.sendMessage(prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.32")).replace("%CLASS%",ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED));
 											break;
 										}
 									}
@@ -252,7 +285,7 @@ public class Core extends JavaPlugin implements Listener{
 								case "lucio":
 									if(!p.hasPermission("oc.class."+args[1].toLowerCase())) {
 										if(!p.hasPermission("oc.class.all")){
-											p.sendMessage(prefix + ChatColor.RED+"You don't have permission to use "+ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED+" class");
+											p.sendMessage(prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.32")).replace("%CLASS%",ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED));
 											break;
 										}
 									}
@@ -265,8 +298,8 @@ public class Core extends JavaPlugin implements Listener{
 									break;
 								}
 								arena.update(p, 1);
-								}else p.sendMessage(prefix+ChatColor.RED+"You must be in your spawn area to do that");
-							}else p.sendMessage(prefix+ChatColor.RED+"You're not in an arena or arena not started yet");
+								}else p.sendMessage(prefix+ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.30")));
+							}else p.sendMessage(prefix+ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.31")));
 						}else p.sendMessage(prefix+ChatColor.RED+"Use /oc class <hero>");
 					}else if(args[0].equals("autojoin") && p.hasPermission("oc.autojoin")){
 						Arena an = null;
