@@ -1,5 +1,6 @@
 package com.Tuong.Heros;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -8,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.SkullType;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.v1_9_R2.entity.CraftPlayer;
 import org.bukkit.entity.ArmorStand;
@@ -141,8 +143,9 @@ public class Mei
       if (this.ultimate_charge == 1.0F) {
         this.ultimate_charge = 0.0F;
         if(Core.t) player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_ENDERMEN_TELEPORT, 1, 1);
-        Location loc = e.getPlayer().getLocation();
         ArmorStand amm = player.getWorld().spawn(player.getEyeLocation(), ArmorStand.class);
+        Location loc = e.getPlayer().getLocation();
+        amm.setMetadata(Mei.this.player.getName(), new FixedMetadataValue(Core.plugin, "Mei"));
 	    amm.setVisible(false);
 	    amm.setCollidable(false);
 	    amm.setHelmet(skull);
@@ -153,15 +156,34 @@ public class Mei
                 t++;
                 if(t == 20 || start == false){
                 	amm.remove();
-                	this.cancel();
+                	this.cancel();	
+                } 
+                PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(EnumParticle.FIREWORKS_SPARK, true, (float)loc.getX(), (float)loc.getY(), (float)loc.getZ(), 8, 4, 8, 50, 80, new int[0]);
+                PacketPlayOutWorldParticles packet2 = new PacketPlayOutWorldParticles(EnumParticle.WATER_DROP, true, (float)loc.getX(), (float)loc.getY(), (float)loc.getZ(), 8, 4, 8, 50, 80, new int[0]);
+                for(Player p : arena.playerList.keySet()) {
+                	((CraftPlayer)p).getHandle().playerConnection.sendPacket(packet);
+                    ((CraftPlayer)p).getHandle().playerConnection.sendPacket(packet2);
                 }
-                PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(EnumParticle.WATER_DROP, true, (float)loc.getX(), (float)loc.getY(), (float)loc.getZ(), 8, 4, 8, 100, 80, new int[0]);
-                for(Player p : arena.playerList.keySet()) ((CraftPlayer)p).getHandle().playerConnection.sendPacket(packet);
                 for(Entity en : amm.getNearbyEntities(8, 4, 8)) if(en instanceof Player) addFreeze((Player)en,true);
 			}
 		}.runTaskTimer(Core.plugin, 0, 5);
       }
     }
+  }
+  
+  public static ArrayList<Location> circle(Location center, double radius, int amount)
+  {
+      World world = center.getWorld();
+      double increment = (2 * Math.PI) / amount;
+      ArrayList<Location> locations = new ArrayList<Location>();
+      for(int i = 0;i < amount; i++)
+      {
+          double angle = i * increment;
+          double x = center.getX() + (radius * Math.cos(angle));
+          double z = center.getZ() + (radius * Math.sin(angle));
+          locations.add(new Location(world, x, center.getY(), z));
+      }
+      return locations;
   }
   
   @EventHandler
@@ -377,7 +399,7 @@ public class Mei
   }
   public void addFreeze(final Player p,boolean b)
   {
-    if (this.arena.freezed.contains(this.player) && arena.isAlly(p, player)) {
+    if (this.arena.freezed.contains(this.player) || arena.isAlly(p, player) || p.equals(player)) {
       return;
     }
     p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 90, 1));
@@ -419,13 +441,13 @@ public class Mei
   @EventHandler
   public void move(PlayerMoveEvent e)
   {
-    if ((e.getPlayer().equals(this.player)) && (this.shift) && ((e.getTo().getX() != e.getFrom().getX()) || (e.getTo().getZ() != e.getFrom().getZ()) || (e.getTo().getY() != e.getFrom().getY()))) {
+    if ((e.getPlayer().equals(this.player)) && (this.shift) && ((e.getTo().getX() != e.getFrom().getX()) || (e.getTo().getZ() != e.getFrom().getZ()) || (e.getTo().getY() > e.getFrom().getY()))) {
       e.setCancelled(true);
     }
     if ((this.freeze.containsKey(e.getPlayer())) && (!e.getPlayer().hasPotionEffect(PotionEffectType.SLOW))) {
       this.freeze.remove(e.getPlayer());
     }
-    if ((arena.freezed.contains(e.getPlayer())) && ((e.getTo().getX() != e.getFrom().getX()) || (e.getTo().getZ() != e.getFrom().getZ()) || (e.getTo().getY() != e.getFrom().getY()))) {
+    if ((arena.freezed.contains(e.getPlayer())) && ((e.getTo().getX() != e.getFrom().getX()) || (e.getTo().getZ() != e.getFrom().getZ()) || (e.getTo().getY() > e.getFrom().getY()))) {
       e.setCancelled(true);
     }
   }
@@ -475,6 +497,7 @@ public class Mei
       }
       if (!this.player.hasPotionEffect(PotionEffectType.UNLUCK))
       {
+    	player.teleport(player.getLocation().getBlock().getLocation());
         Block block = this.player.getLocation().getBlock();
         Block block1 = this.player.getLocation().add(0.0D, 1.0D, 0.0D).getBlock();
         if ((block.getType() != Material.AIR) || (block1.getType() != Material.AIR))
@@ -532,6 +555,7 @@ public class Mei
   
   public void stop()
   {
+	player.setWalkSpeed(0.2F);
     this.start = false;
     HandlerList.unregisterAll(this);
     this.player.setLevel(0);this.player.setExp(0.0F);

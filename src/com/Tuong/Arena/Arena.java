@@ -5,6 +5,8 @@ import java.util.HashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
+import org.bukkit.FireworkEffect.Type;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,6 +15,7 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.craftbukkit.v1_9_R2.entity.CraftPlayer;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -35,7 +38,9 @@ import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -48,6 +53,7 @@ import com.Tuong.Heros.Hanzo;
 import com.Tuong.Heros.Lucio;
 import com.Tuong.Heros.Mei;
 import com.Tuong.Heros.Roadhog;
+import com.Tuong.Heros.Soldier76;
 import com.Tuong.Heros.Tracer;
 import com.Tuong.OverCraftCore.Core;
 import com.Tuong.Region.Cuboid;
@@ -112,6 +118,27 @@ public class Arena implements Listener{
 		boss.setProgress(Double.valueOf(Double.valueOf(capturePoint[captureObjective])/Double.valueOf(Core.maxpoint)));
 		refresh();
 	}
+	public void winRefresh(int blue){
+		new BukkitRunnable() {
+			int t = 0;
+			@Override
+			public void run() {
+				t++;
+				for(Player player : playerList.keySet()){
+					Firework firework = player.getWorld().spawn(player.getLocation(), Firework.class);
+					FireworkMeta data = (FireworkMeta) firework.getFireworkMeta();
+					if((blue == 1 && team.get(player).equals("BLUE")) || !(blue == 1 && team.get(player).equals("BLUE")) || blue == 0)data.addEffects(FireworkEffect.builder().withColor(Color.GREEN).with(Type.BURST).trail(true).flicker(false).build());
+					else data.addEffects(FireworkEffect.builder().withColor(Color.RED).with(Type.BURST).trail(true).flicker(false).build());
+					data.setPower(2);
+					firework.setFireworkMeta(data);
+				}
+				if(t == 8){
+					refresh();
+					this.cancel();
+				}
+			}
+		}.runTaskTimer(Core.plugin, 0, 20);
+	}
 	public boolean isAlly(Player player1, Player player2){
 		if(team.containsKey(player1) && team.containsKey(player2) && team.get(player1).equals(team.get(player2))) return true;
 		return false;
@@ -173,6 +200,7 @@ public class Arena implements Listener{
 		if(playerList.get(p) instanceof Roadhog) return "Roadhog";
 		if(playerList.get(p) instanceof Lucio) return "Lucio";
 		if(playerList.get(p) instanceof Genji) return "Genji";
+		if(playerList.get(p) instanceof Soldier76) return "Soldier76";
 		return "";
 	}
 	@EventHandler
@@ -299,7 +327,7 @@ public class Arena implements Listener{
 		if(playerList.containsKey(e.getPlayer())) e.setCancelled(true);
 	}
 	public void playerJoin(Player player){
-		player.setResourcePack("https://dl.dropboxusercontent.com/s/vlptjhaogdl3cbz/Overwatch.zip");
+		player.setResourcePack("https://dl.dropboxusercontent.com/s/15qai9g0hbm01e5/OverCraft_T.zip");
 		player.setHealth(player.getMaxHealth());
 		player.setFoodLevel(20);
 		playerList.put(player, null);
@@ -365,6 +393,7 @@ public class Arena implements Listener{
 		if(playerList.containsKey(e.getEntity())) {
 			e.setKeepInventory(true);
 			e.setKeepLevel(true);
+			e.setDroppedExp(0);
 		}
 	}
 	@EventHandler
@@ -417,7 +446,7 @@ public class Arena implements Listener{
 								sendMessage(p, 14);
 							}
 						}
-						refresh();
+						winRefresh(2);
 						this.cancel();
 						return;
 					}
@@ -462,7 +491,7 @@ public class Arena implements Listener{
 									sendMessage(p, 14);
 								}
 							}
-							refresh();
+							winRefresh(2);
 							this.cancel();
 							return;
 						}
@@ -484,7 +513,7 @@ public class Arena implements Listener{
 							sendMessage(p, 14);
 						}
 					}
-					refresh();
+					winRefresh(1);
 					this.cancel();
 					return;
 				}
@@ -499,7 +528,7 @@ public class Arena implements Listener{
 						sendMessage(p, 13);
 					}
 					//cancel
-					refresh();
+					winRefresh(0);
 					this.cancel(); 
 					return;
 				}
@@ -515,7 +544,7 @@ public class Arena implements Listener{
 								sendMessage(p, 14);
 							}
 						}
-						refresh();
+						winRefresh(2);
 						this.cancel();
 						return;
 					}
@@ -541,6 +570,7 @@ public class Arena implements Listener{
 	}
 	public void playerLeave(Player player){
 		player.setWalkSpeed(0.2F);
+		for(PotionEffect pe :  player.getActivePotionEffects()) player.removePotionEffect(pe.getType());
 		classRemove(player);
 		player.getScoreboard().clearSlot(DisplaySlot.SIDEBAR);
 		player.setHealth(player.getMaxHealth());
@@ -618,6 +648,7 @@ public class Arena implements Listener{
 		else if(playerList.get(player) instanceof Lucio) ((Lucio)playerList.get(player)).stop();
 		else if(playerList.get(player) instanceof Genji) ((Genji)playerList.get(player)).stop();
 		else if(playerList.get(player) instanceof Mei) ((Mei)playerList.get(player)).stop();
+		else if(playerList.get(player) instanceof Soldier76) ((Soldier76)playerList.get(player)).stop();
 	}
 	
 	public boolean inArena(Player player){

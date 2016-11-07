@@ -110,7 +110,7 @@ public class Tracer implements Listener{
 				if(ultimate_charge + 0.01 >= 1){
 					ultimate_charge = 1;
 					if(msg == false){
-						player.getWorld().playSound(player.getLocation(), Sound.ENTITY_BAT_LOOP, 1, 1);
+						if(Core.t) player.getWorld().playSound(player.getLocation(), Sound.ENTITY_BAT_LOOP, 1, 1);
 						Core.sendTitle(player, 5, 51, 1, ChatColor.GOLD+"ULTIMATE", ChatColor.GREEN+"Ready to launch");
 						msg = true;
 					}else updateCharge();
@@ -244,21 +244,20 @@ public class Tracer implements Listener{
 		}
 		if(e.getPlayer().equals(player) && (e.getAction() == Action.RIGHT_CLICK_BLOCK || e.getAction() == Action.RIGHT_CLICK_AIR)){
 			if(ammo > 0 && start){
-				new BukkitRunnable(){
 					Location loc = player.getLocation();
 					Vector direction = loc.getDirection().normalize();
 					Player p2 = player;
 					double t = 0;
-					public void run(){
+					while(true){
 						t += 1.8;
 						double x = direction.getX() * t;
 						double y = direction.getY() * t + 1.5;
 						double z = direction.getZ() * t;
 						loc.add(x,y,z);
 						boolean b = true;
-						if(loc.getBlock().getType() != Material.AIR && loc.getBlock().getType() != Material.GRASS && loc.getBlock().getType() != Material.LONG_GRASS) this.cancel();
+						if(loc.getBlock().getType() != Material.AIR && loc.getBlock().getType() != Material.GRASS && loc.getBlock().getType() != Material.LONG_GRASS) break;
 						for(Player p : arena.getPlayerList().keySet()){
-							if(p.getEyeLocation().distance(loc) <= 1 || p.getLocation().distance(loc) <= 1){
+							if(p.getEyeLocation().distance(loc) <= 1.5 || p.getLocation().distance(loc) <= 1.5){
 								if(arena.isAlly(p, p2) == false) {
 									if(arena.playerList.get(p) instanceof Genji && ((Genji)arena.playerList.get(p)).isReflect()){
 										t = 0;
@@ -274,10 +273,9 @@ public class Tracer implements Listener{
 						if(b){
 							Core.playParticle(EnumParticle.WATER_DROP, loc, 1);
 							loc.subtract(x,y,z);
-							if (t > 30)this.cancel();
+							if (t > 30)break;
 						}
 					}
-				}.runTaskTimer(Core.plugin, 0, 1);
 				ammo-=2;
 				player.playSound(player.getLocation(), Sound.ENTITY_BAT_DEATH, 1, 1);
 				if(start)player.setLevel(ammo);

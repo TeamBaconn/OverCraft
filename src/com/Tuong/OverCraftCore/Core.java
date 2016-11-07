@@ -40,6 +40,7 @@ import com.Tuong.Heros.Hanzo;
 import com.Tuong.Heros.Lucio;
 import com.Tuong.Heros.Mei;
 import com.Tuong.Heros.Roadhog;
+import com.Tuong.Heros.Soldier76;
 import com.Tuong.Heros.Tracer;
 
 import net.md_5.bungee.api.ChatColor;
@@ -292,6 +293,17 @@ public class Core extends JavaPlugin implements Listener{
 									arena.classRemove(p);
 									arena.playerList.remove(p);
 									arena.playerList.put(p, new Lucio(p, arena));
+									break;
+								case "soldier76":
+									if(!p.hasPermission("oc.class."+args[1].toLowerCase())) {
+										if(!p.hasPermission("oc.class.all")){
+											p.sendMessage(prefix + ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.32")).replace("%CLASS%",ChatColor.LIGHT_PURPLE+args[1].toLowerCase()+ChatColor.RED));
+											break;
+										}
+									}
+									arena.classRemove(p);
+									arena.playerList.remove(p);
+									arena.playerList.put(p, new Soldier76(p, arena));
 									break;
 								default:
 									p.sendMessage(prefix+ChatColor.RED+"Invalid hero");
