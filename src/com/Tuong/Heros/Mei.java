@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.bukkit.Achievement;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -11,7 +12,7 @@ import org.bukkit.SkullType;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_9_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_10_R1.entity.CraftPlayer;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -27,7 +28,6 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
@@ -47,8 +47,8 @@ import com.Tuong.Arena.Arena;
 import com.Tuong.OverCraftCore.Core;
 
 import net.md_5.bungee.api.ChatColor;
-import net.minecraft.server.v1_9_R2.EnumParticle;
-import net.minecraft.server.v1_9_R2.PacketPlayOutWorldParticles;
+import net.minecraft.server.v1_10_R1.EnumParticle;
+import net.minecraft.server.v1_10_R1.PacketPlayOutWorldParticles;
 
 public class Mei
   implements Listener
@@ -69,6 +69,7 @@ public class Mei
   private ItemStack skull;
   public Mei(Player player, Arena arena)
   {
+	player.removeAchievement(Achievement.OPEN_INVENTORY);
 	skull = new ItemStack(Material.SKULL_ITEM, 1, (short) SkullType.PLAYER.ordinal());
 	SkullMeta skullMeta = (SkullMeta) skull.getItemMeta();
 	skullMeta.setDisplayName("Demn Son Where U Get This From");
@@ -470,22 +471,6 @@ public class Mei
     return vector;
   }
   
-  @EventHandler
-  public void rekall(PlayerItemHeldEvent e)
-  {
-    if (e.getPlayer().equals(this.player))
-    {
-      e.setCancelled(true);
-      /*if ((e.getPlayer().equals(this.player)) && (this.arena.death.contains(this.player)))
-      {
-        e.setCancelled(true);
-        return;
-      }
-      if (!this.player.hasPotionEffect(PotionEffectType.LUCK)) {
-        this.player.addPotionEffect(new PotionEffect(PotionEffectType.LUCK, 240, 1));
-      }*/
-    }
-  }
   
   @EventHandler
   public void changebooster(PlayerToggleSneakEvent e)
@@ -517,8 +502,8 @@ public class Mei
           public void run()
           {
             Mei.this.shift = false;
-            Mei.this.player.getLocation().getBlock().setType(Material.AIR);
-            Mei.this.player.getLocation().add(0.0D, 1.0D, 0.0D).getBlock().setType(Material.AIR);
+            block.setType(Material.AIR);
+            block1.setType(Material.AIR);
           }
         }.runTaskLater(Core.plugin, 80L);
       }

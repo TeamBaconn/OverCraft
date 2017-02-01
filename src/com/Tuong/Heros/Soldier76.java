@@ -3,6 +3,7 @@ package com.Tuong.Heros;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.bukkit.Achievement;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,9 +22,9 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerAchievementAwardedEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -40,16 +41,17 @@ import com.Tuong.Arena.Arena;
 import com.Tuong.OverCraftCore.Core;
 
 import net.md_5.bungee.api.ChatColor;
-import net.minecraft.server.v1_9_R2.EnumParticle;
+import net.minecraft.server.v1_10_R1.EnumParticle;
 
 public class Soldier76 implements Listener{
 	private Player player;
 	private Arena arena;
 	private int ammo,maxhealth;
 	private float ultimate_charge;
-	private final double damageshoot = 6;
+	private final double damageshoot = 8;
 	private boolean start,msg,reloading,ult;
 	public Soldier76(Player player, Arena arena){
+		player.removeAchievement(Achievement.OPEN_INVENTORY);
 		player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 1));
 		player.getInventory().clear();
 		player.getInventory().setHeldItemSlot(8);
@@ -148,12 +150,14 @@ public class Soldier76 implements Listener{
 	}
 	@SuppressWarnings("deprecation")
 	@EventHandler
-	public void rekall(PlayerItemHeldEvent e){
+	public void rekall(PlayerAchievementAwardedEvent e){
 		if(e.getPlayer().equals(player) && arena.death.contains(player)){
 			e.setCancelled(true);
 			return;
 		}
-		if(e.getPlayer().equals(player)){
+		if(e.getPlayer().equals(player) && e.getAchievement().equals(Achievement.OPEN_INVENTORY)){
+			e.getPlayer().closeInventory();
+			e.setCancelled(true);
 			if(!player.hasPotionEffect(PotionEffectType.LUCK) && player.isOnGround()){
 				if(Core.t) player.getWorld().playSound(player.getLocation(), Sound.ENTITY_SHEEP_AMBIENT, 1, 1);
 				player.addPotionEffect(new PotionEffect(PotionEffectType.LUCK, 160, 1));

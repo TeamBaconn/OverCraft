@@ -6,7 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 public class ArenaManager {
-	private ArrayList<Arena> listArena;
+	public ArrayList<Arena> listArena;
 	public ArenaManager(){
 		listArena = new ArrayList<Arena>();
 	}

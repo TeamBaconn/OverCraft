@@ -2,29 +2,28 @@ package com.Tuong.Heros;
 
 import java.util.Arrays;
 
+import org.bukkit.Achievement;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Bat;
-import org.bukkit.entity.Egg;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Snowball;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.player.PlayerAchievementAwardedEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -52,6 +51,7 @@ public class Roadhog implements Listener{
 	private boolean start,msg,reloading;
 	private Bat pat;
 	public Roadhog(Player player, Arena arena){
+		player.removeAchievement(Achievement.OPEN_INVENTORY);
 		player.getInventory().clear();
 		player.getInventory().setHeldItemSlot(8);
 		player.getInventory().setItemInMainHand(getItemName());
@@ -86,13 +86,13 @@ public class Roadhog implements Listener{
 					public void run() {
 						if(t == 20) this.cancel();
 						for(int i = 0; i < 12; i++){
-							Egg egg = player.getWorld().spawn(player.getEyeLocation(), Egg.class);
+							Snowball SNOW_BALL = player.getWorld().spawn(player.getEyeLocation(), Snowball.class);
 							Vector d = player.getLocation().getDirection().multiply(2);
 							d.add(new Vector(Math.random() * accuracy - accuracy,Math.random() * accuracy - accuracy,Math.random() * accuracy - accuracy));
-							egg.setVelocity(d);
-							egg.setGlowing(true);
-							egg.setShooter(player);
-							egg.setMetadata(player.getName(), new FixedMetadataValue(Core.plugin, "Roadhog"));
+							SNOW_BALL.setVelocity(d);
+							SNOW_BALL.setGlowing(true);
+							SNOW_BALL.setShooter(player);
+							SNOW_BALL.setMetadata(player.getName(), new FixedMetadataValue(Core.plugin, "Roadhog"));
 						}
 						t++;
 					}
@@ -164,13 +164,7 @@ public class Roadhog implements Listener{
 			if(start) player.setExp(ultimate_charge);
 		}
 	}
-	@EventHandler
-    public void onCreatureSpawn(CreatureSpawnEvent event)
-    {
-        if (event.getSpawnReason() == SpawnReason.EGG && event.getEntity().getWorld().equals(arena.getLocationInfo()[0].getWorld())){
-            event.setCancelled(true);
-        }
-    }
+	
 	@EventHandler
 	public void pick(PlayerPickupArrowEvent e){
 		if(e.getPlayer().equals(player))e.setCancelled(true);
@@ -187,12 +181,12 @@ public class Roadhog implements Listener{
 			if(ammo > 0){
 				float accuracy = 0.2F;
 				for(int i = 0; i < 10; i++){
-					Egg egg = player.getWorld().spawn(player.getEyeLocation(), Egg.class);
+					Snowball SNOW_BALL = player.getWorld().spawn(player.getEyeLocation(), Snowball.class);
 					Vector d = player.getLocation().getDirection().multiply(2);
 					d.add(new Vector(Math.random() * accuracy - accuracy,Math.random() * accuracy - accuracy,Math.random() * accuracy - accuracy));
-					egg.setVelocity(d);
-					egg.setShooter(player);
-					egg.setMetadata(player.getName(), new FixedMetadataValue(Core.plugin, "Roadhog"));
+					SNOW_BALL.setVelocity(d);
+					SNOW_BALL.setShooter(player);
+					SNOW_BALL.setMetadata(player.getName(), new FixedMetadataValue(Core.plugin, "Roadhog"));
 				}
 				ammo--;
 				player.playSound(player.getLocation(), Sound.BLOCK_STONE_STEP, 1, 1);
@@ -229,13 +223,14 @@ public class Roadhog implements Listener{
 		}.runTaskLater(Core.plugin, 20);
 	}
 	@EventHandler
-	public void rekall(PlayerItemHeldEvent e){
+	public void rekall(PlayerAchievementAwardedEvent e){
 		if(e.getPlayer().equals(player) && arena.death.contains(player)) {
 			e.setCancelled(true);
 			return;
 		}
-		if(e.getPlayer().equals(player)){
+		if(e.getPlayer().equals(player) && e.getAchievement().equals(Achievement.OPEN_INVENTORY)){
 			e.setCancelled(true);
+			e.getPlayer().closeInventory();
 			if(!player.hasPotionEffect(PotionEffectType.LUCK) && e.getPlayer().getHealth() != maxhealth){
 				player.addPotionEffect(new PotionEffect(PotionEffectType.LUCK, 160, 1));
 				player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 50, 20));

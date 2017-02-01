@@ -4,6 +4,7 @@ package com.Tuong.Heros;
 import java.util.Arrays;
 import java.util.Set;
 
+import org.bukkit.Achievement;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -25,12 +26,12 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerAchievementAwardedEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
@@ -50,7 +51,7 @@ import com.Tuong.Arena.Arena;
 import com.Tuong.OverCraftCore.Core;
 
 import net.md_5.bungee.api.ChatColor;
-import net.minecraft.server.v1_9_R2.EnumParticle;
+import net.minecraft.server.v1_10_R1.EnumParticle;
 
 public class Genji implements Listener{
 	private Player player;
@@ -60,6 +61,7 @@ public class Genji implements Listener{
 	private double shootdamage,maxREGENERATIONth;
 	private boolean start,msg,reloading,reflect,ultimate,shoot;
 	public Genji(Player player, Arena arena){
+		player.removeAchievement(Achievement.OPEN_INVENTORY);
 		player.setAllowFlight(true);
 		player.getInventory().clear();
 		player.getInventory().setHeldItemSlot(8);
@@ -322,9 +324,10 @@ public class Genji implements Listener{
         return vector;
     }
 	@EventHandler
-	public void rekall(PlayerItemHeldEvent e){
-		if(e.getPlayer().equals(player)){
+	public void rekall(PlayerAchievementAwardedEvent e){
+		if(e.getPlayer().equals(player) && e.getAchievement().equals(Achievement.OPEN_INVENTORY)){
 			e.setCancelled(true);
+			e.getPlayer().closeInventory();
 			if(e.getPlayer().equals(player) && arena.death.contains(player)){
 				e.setCancelled(true);
 				return;
@@ -353,6 +356,12 @@ public class Genji implements Listener{
 				Entity dam = Core.getNearestEntityInSight(e.getPlayer(), 14);
 				if(dam != null) ((LivingEntity) dam).addPotionEffect(new PotionEffect(PotionEffectType.POISON, 60, 2));
 				player.setVelocity(player.getLocation().getDirection().multiply(3));
+				new BukkitRunnable() {
+					@Override
+					public void run() {
+						player.setVelocity(new Vector(0,0,0));
+					}
+				}.runTaskLater(Core.plugin, 10);
 			}
 		}
 	}

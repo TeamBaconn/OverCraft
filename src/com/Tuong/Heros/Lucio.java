@@ -2,6 +2,7 @@ package com.Tuong.Heros;
 
 import java.util.Arrays;
 
+import org.bukkit.Achievement;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -19,9 +20,9 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.player.PlayerAchievementAwardedEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
@@ -39,7 +40,7 @@ import com.Tuong.Arena.Arena;
 import com.Tuong.OverCraftCore.Core;
 
 import net.md_5.bungee.api.ChatColor;
-import net.minecraft.server.v1_9_R2.EnumParticle;
+import net.minecraft.server.v1_10_R1.EnumParticle;
 
 public class Lucio implements Listener{
 	private Player player;
@@ -49,6 +50,7 @@ public class Lucio implements Listener{
 	private double shootdamage;
 	private boolean start,msg,reloading,speed,shift,boost,shoot;
 	public Lucio(Player player, Arena arena){
+		player.removeAchievement(Achievement.OPEN_INVENTORY);
 		player.getInventory().clear();
 		player.getInventory().setHeldItemSlot(8);
 		player.getInventory().setItemInMainHand(getItemName());
@@ -186,7 +188,23 @@ public class Lucio implements Listener{
                 ChatColor.GOLD + "Ammo usage: " + ChatColor.GRAY + "" + ChatColor.ITALIC + " 4 rounds per shot",
                 ChatColor.GOLD + "Rate of fire: " + ChatColor.GRAY + "" + ChatColor.ITALIC + "1 shot per second",
                 ChatColor.GOLD + "Ammo: " + ChatColor.GRAY + "" + ChatColor.ITALIC + "20",
-                ChatColor.LIGHT_PURPLE + "Description: " + ChatColor.RED + "" + ChatColor.ITALIC + "Lúcio can hit his enemies with sonic projectiles!"));
+                ChatColor.LIGHT_PURPLE + "Description: " + ChatColor.RED + "" + ChatColor.ITALIC + "Lï¿½cio can hit his enemies with sonic projectiles!"));
+        soundgun.setItemMeta(meta);
+        return soundgun;
+    }
+	private ItemStack getItemName1(){
+        ItemStack soundgun = new ItemStack(Material.GOLD_SPADE, 1);
+        ItemMeta meta = soundgun.getItemMeta();
+        soundgun.setItemMeta(meta);
+        meta.spigot().setUnbreakable(true);
+        meta.setDisplayName(ChatColor.BOLD + "" + ChatColor.GRAY + "Sonic Amplifier");
+        meta.setLore(Arrays.asList(ChatColor.GOLD + "Type: " + ChatColor.GRAY + "" + ChatColor.ITALIC + "Linear projectile",
+                ChatColor.GOLD + "Damage: " + ChatColor.GRAY + "" + ChatColor.ITALIC + "16 per projectile/4 projectiles per shot",
+                ChatColor.GOLD + "Projectile speed: " + ChatColor.GRAY + "" + ChatColor.ITALIC + " 33.33 meters per second",
+                ChatColor.GOLD + "Ammo usage: " + ChatColor.GRAY + "" + ChatColor.ITALIC + " 4 rounds per shot",
+                ChatColor.GOLD + "Rate of fire: " + ChatColor.GRAY + "" + ChatColor.ITALIC + "1 shot per second",
+                ChatColor.GOLD + "Ammo: " + ChatColor.GRAY + "" + ChatColor.ITALIC + "20",
+                ChatColor.LIGHT_PURPLE + "Description: " + ChatColor.RED + "" + ChatColor.ITALIC + "Lï¿½cio can hit his enemies with sonic projectiles!"));
         soundgun.setItemMeta(meta);
         return soundgun;
     }
@@ -200,16 +218,15 @@ public class Lucio implements Listener{
     public void onPlayerMove(PlayerMoveEvent event)
     {
       if(!event.getPlayer().equals(this.player)) return;
-      if(event.getTo().getBlock().getRelative(BlockFace.DOWN).getType() == Material.AIR)
+      if(event.getTo().getBlock().getRelative(BlockFace.DOWN).getType() == Material.AIR && event.getPlayer().getLocation().getPitch() < 25 && event.getPlayer().getLocation().getPitch() > -15)
       if (player.getEyeLocation().getBlock().getRelative(BlockFace.NORTH)
         .getType() != Material.AIR)
       {
         if (player.getEyeLocation().getBlock()
           .getRelative(BlockFace.NORTH).getType() != Material.WATER) {
-          if (player.getEyeLocation().getBlock()
-            .getRelative(BlockFace.NORTH).getType() != Material.STATIONARY_WATER) {
+          if (player.getEyeLocation().getBlock().getRelative(BlockFace.NORTH).getType() != Material.BARRIER) {
               player.setVelocity(player.getEyeLocation()
-                .getDirection().multiply(0.65D));
+                .getDirection().multiply(0.5D));
           }
         }
       }
@@ -218,9 +235,9 @@ public class Lucio implements Listener{
         if (player.getEyeLocation().getBlock()
           .getRelative(BlockFace.SOUTH).getType() != Material.WATER) {
           if (player.getEyeLocation().getBlock()
-            .getRelative(BlockFace.SOUTH).getType() != Material.STATIONARY_WATER) {
+            .getRelative(BlockFace.SOUTH).getType() != Material.BARRIER) {
               player.setVelocity(player.getEyeLocation()
-                .getDirection().multiply(0.65D));
+                .getDirection().multiply(0.5D));
           }
         }
       }
@@ -229,18 +246,18 @@ public class Lucio implements Listener{
         if (player.getEyeLocation().getBlock().getRelative(BlockFace.EAST)
           .getType() != Material.WATER) {
           if (player.getEyeLocation().getBlock()
-            .getRelative(BlockFace.EAST).getType() != Material.STATIONARY_WATER) {
+            .getRelative(BlockFace.EAST).getType() != Material.BARRIER) {
               player.setVelocity(player.getEyeLocation()
-                .getDirection().multiply(0.65D));
+                .getDirection().multiply(0.5D));
           }
         }
       } 	
       else if ((player.getEyeLocation().getBlock().getRelative(BlockFace.WEST).getType() != Material.AIR) && 
         (player.getEyeLocation().getBlock().getRelative(BlockFace.WEST)
         .getType() != Material.WATER)) {
-        if (player.getEyeLocation().getBlock().getRelative(BlockFace.WEST).getType() != Material.STATIONARY_WATER) {
+        if (player.getEyeLocation().getBlock().getRelative(BlockFace.WEST).getType() != Material.BARRIER) {
             player.setVelocity(player.getEyeLocation()
-              .getDirection().multiply(0.65D));
+              .getDirection().multiply(0.5D));
           }
       }
     }
@@ -317,9 +334,10 @@ public class Lucio implements Listener{
 		}.runTaskLater(Core.plugin, 25);
 	}
 	@EventHandler
-	public void rekall(PlayerItemHeldEvent e){
-		if(e.getPlayer().equals(player)){
+	public void rekall(PlayerAchievementAwardedEvent e){
+		if(e.getPlayer().equals(player) && e.getAchievement().equals(Achievement.OPEN_INVENTORY)){
 			e.setCancelled(true);
+			e.getPlayer().closeInventory();
 			if(e.getPlayer().equals(player) && arena.death.contains(player)){
 				e.setCancelled(true);
 				return;
@@ -347,10 +365,12 @@ public class Lucio implements Listener{
 				speed = false; 
 				Core.sendTitle(player, 10, 30, 10, "", ChatColor.YELLOW+""+ChatColor.BOLD+"Heal");
 				if(Core.t) player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_CHICKEN_STEP, 1, 1);
+				player.getInventory().setItemInMainHand(getItemName1());
 			}else {
 				speed = true;
 				Core.sendTitle(player, 10, 30, 10, "", ChatColor.GREEN+""+ChatColor.BOLD+"Speed");
 				if(Core.t) player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_CHICKEN_HURT, 1, 1);
+				player.getInventory().setItemInMainHand(getItemName());
 			}
 		}
 	}
@@ -376,6 +396,7 @@ public class Lucio implements Listener{
 	public void stop(){
 		start = false;
 		HandlerList.unregisterAll(this);
+		player.setWalkSpeed(0.2F);
 		player.setLevel(0); player.setExp(0);
 		player.setLevel((int)arena.expStore.get(player)[0]);
 		player.setExp(arena.expStore.get(player)[1]);

@@ -2,6 +2,7 @@ package com.Tuong.Heros;
 
 import java.util.Arrays;
 
+import org.bukkit.Achievement;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,13 +17,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerAchievementAwardedEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -40,7 +41,7 @@ import com.Tuong.Arena.Arena;
 import com.Tuong.OverCraftCore.Core;
 
 import net.md_5.bungee.api.ChatColor;
-import net.minecraft.server.v1_9_R2.EnumParticle;
+import net.minecraft.server.v1_10_R1.EnumParticle;
 
 public class Tracer implements Listener{
 	private Player player;
@@ -51,6 +52,7 @@ public class Tracer implements Listener{
 	private Location loc;
 	private boolean start,shift,msg,reloading,first;
 	public Tracer(Player player, Arena arena){
+		player.removeAchievement(Achievement.OPEN_INVENTORY);
 		player.getInventory().clear();
 		player.getInventory().setHeldItemSlot(8);
 		player.getInventory().setItemInOffHand(getItemName());
@@ -197,7 +199,6 @@ public class Tracer implements Listener{
 							return;
 						}
 						player.teleport(am.getLocation());
-						player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_ENDERMEN_TELEPORT, 1, 1);
 						am.remove();
 						shift = false;
 					}
@@ -214,12 +215,13 @@ public class Tracer implements Listener{
 		if(e.getPlayer().equals(player))e.setCancelled(true);
 	}
 	@EventHandler
-	public void rekall(PlayerItemHeldEvent e){
+	public void rekall(PlayerAchievementAwardedEvent e){
 		if(e.getPlayer().equals(player) && arena.death.contains(player)){
 			e.setCancelled(true);
 			return;
 		}
-		if(e.getPlayer().equals(player)){
+		if(e.getPlayer().equals(player) && e.getAchievement().equals(Achievement.OPEN_INVENTORY)){
+			e.getPlayer().closeInventory();
 			e.setCancelled(true);
 			if(first){
 				first = false;
@@ -273,7 +275,7 @@ public class Tracer implements Listener{
 						if(b){
 							Core.playParticle(EnumParticle.WATER_DROP, loc, 1);
 							loc.subtract(x,y,z);
-							if (t > 30)break;
+							if (t > 12)break;
 						}
 					}
 				ammo-=2;
@@ -317,10 +319,27 @@ public class Tracer implements Listener{
 			if(e.getPlayer().equals(player) && arena.death.contains(player)) return;
 			if(ultimate_charge == 1){
 				ultimate_charge = 0;
-				TNTPrimed tnt = player.getWorld().spawn(player.getEyeLocation(), TNTPrimed.class);
-				tnt.setVelocity(player.getVelocity().multiply(0.5));
-				tnt.setFuseTicks(40);
-				tnt.setMetadata(player.getName(), new FixedMetadataValue(Core.plugin, "TRACER"));
+				ArmorStand a = player.getWorld().spawn(player.getEyeLocation(), ArmorStand.class);
+				a.setHelmet(new ItemStack(Material.SLIME_BALL));
+				a.setVisible(false);
+				a.setMetadata(player.getName(), new FixedMetadataValue(Core.plugin, "TRACER"));
+				a.setVelocity(player.getLocation().getDirection().multiply(2));
+				a.setSmall(true);
+				new BukkitRunnable() {
+					int i = 0;
+					@Override
+					public void run() {
+						if(!start) this.cancel();
+						if(i == 8){
+						a.remove();
+						TNTPrimed tnt = player.getWorld().spawn(a.getEyeLocation(), TNTPrimed.class);
+						tnt.setFuseTicks(0);
+						tnt.setMetadata(player.getName(), new FixedMetadataValue(Core.plugin, "TRACER"));
+						this.cancel();
+						}
+						i++;
+					}
+				}.runTaskTimer(Core.plugin,0,5);
 				msg = false;
 				if(Core.t)player.getWorld().playSound(player.getEyeLocation(), Sound.ENTITY_BAT_AMBIENT, 1, 1);
 			}

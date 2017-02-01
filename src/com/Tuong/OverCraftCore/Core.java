@@ -9,14 +9,16 @@ import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_9_R2.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_9_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_10_R1.entity.CraftEntity;
+import org.bukkit.craftbukkit.v1_10_R1.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -24,17 +26,23 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.material.Wool;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import com.Tuong.Arena.Arena;
 import com.Tuong.Arena.ArenaManager;
+import com.Tuong.Database.Database;
 import com.Tuong.Heros.Genji;
 import com.Tuong.Heros.Hanzo;
 import com.Tuong.Heros.Lucio;
@@ -42,14 +50,18 @@ import com.Tuong.Heros.Mei;
 import com.Tuong.Heros.Roadhog;
 import com.Tuong.Heros.Soldier76;
 import com.Tuong.Heros.Tracer;
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 
 import net.md_5.bungee.api.ChatColor;
-import net.minecraft.server.v1_9_R2.AxisAlignedBB;
-import net.minecraft.server.v1_9_R2.EnumParticle;
-import net.minecraft.server.v1_9_R2.IChatBaseComponent;
-import net.minecraft.server.v1_9_R2.PacketPlayOutTitle;
-import net.minecraft.server.v1_9_R2.PacketPlayOutWorldParticles;
-import net.minecraft.server.v1_9_R2.PlayerConnection;
+import net.minecraft.server.v1_10_R1.AxisAlignedBB;
+import net.minecraft.server.v1_10_R1.EnumParticle;
+import net.minecraft.server.v1_10_R1.IChatBaseComponent;
+import net.minecraft.server.v1_10_R1.PacketPlayOutCustomSoundEffect;
+import net.minecraft.server.v1_10_R1.PacketPlayOutTitle;
+import net.minecraft.server.v1_10_R1.PacketPlayOutWorldParticles;
+import net.minecraft.server.v1_10_R1.PlayerConnection;
+import net.minecraft.server.v1_10_R1.SoundCategory;
 
 public class Core extends JavaPlugin implements Listener{
 	public static Plugin plugin;
@@ -57,20 +69,31 @@ public class Core extends JavaPlugin implements Listener{
 	public static boolean t;
 	public static int maxsecond,maxpoint; 
 	public static final String prefix = ChatColor.WHITE+"["+ChatColor.GRAY+""+ChatColor.BOLD+"Over"+ChatColor.GOLD+""+ChatColor.BOLD+"Craft"+ChatColor.WHITE+"] ";
+	public static Database database;
+	private static int s1,s2,s3;
 	private String[] instructor = {"Now, set blue team spawn by left click the block",
-			"Then set lower regoin of blue team spawn",
-			"And set upper regoin of blue team spawn",
+			"Then set lower region of blue team spawn",
+			"And set upper region of blue team spawn",
 			"Then set red team spawn",
-			"And set lower regoin of red team spawn",
-			"And set upper regoin of red team spawn",
+			"And set lower region of red team spawn",
+			"And set upper region of red team spawn",
 			"Then set lobby location where players will teleport there while waiting for players",
 			"And set return point where players will teleport after the game end",
+			"Then, set lower arena region",
+			"And set upper arena region",
 			"Set lower region for capture point 1"};
 	public void onEnable(){
 		getConfig().options().copyDefaults(true);
+		getConfig().addDefault("BungeeCord", false);
+		getConfig().addDefault("FallBackServer", "lobby");
+		getConfig().addDefault("Database", false);
+		getConfig().addDefault("Username", "user");
+		getConfig().addDefault("Password", "pass");
+		getConfig().addDefault("DatabaseName", "yournamehere");
 		getConfig().addDefault("Sound.Enable", true);
 		getConfig().addDefault("DefaultSecondsToCapture", 300);
 		getConfig().addDefault("DefaultPointsToCapture", 200);
+		getConfig().addDefault("DefaultCountDownSeconds", 30);
 		getConfig().addDefault("Message.1", "&cYou are recovering from the death!");
 		getConfig().addDefault("Message.2", "&7You joined team &9BLUE");
 		getConfig().addDefault("Message.3", "&7You joined team &cRED");
@@ -103,7 +126,6 @@ public class Core extends JavaPlugin implements Listener{
 		getConfig().addDefault("Message.30", "&cYou must be in your spawn area to do that");
 		getConfig().addDefault("Message.31", "&cYou're not in an arena or arena not started yet");
 		getConfig().addDefault("Message.32", "&cYou don't have permission to use &d%CLASS% class");
-		
 		saveConfig();
 		t = getConfig().getBoolean("Sound.Enable");
 		maxsecond = getConfig().getInt("DefaultSecondsToCapture");
@@ -115,16 +137,64 @@ public class Core extends JavaPlugin implements Listener{
 			String name = st;
 			int min = getConfig().getInt("Arena."+st+".minPlayers"),max = getConfig().getInt("Arena."+st+".maxPlayers"),cap = getConfig().getInt("Arena."+st+".capturePoints");
 			int[] numberic = {min,max,cap};
-			Location[] locationInfo = new Location[cap*2+8];
-			for(int i = 0; i < cap*2+8; i++){
+			Location[] locationInfo = new Location[cap*2+10];
+			for(int i = 0; i < cap*2+10; i++){
 				Location loc = new Location(Bukkit.getWorld(getConfig().getString("Arena."+st+"."+i+".World")),getConfig().getDouble("Arena."+st+"."+i+".x"),getConfig().getDouble("Arena."+st+"."+i+".y"),getConfig().getDouble("Arena."+st+"."+i+".z"));
 				locationInfo[i] = loc;
 			}
 			arenaManager.createArena(name, locationInfo, numberic);
 		}
 		saveConfig();
+		if(getConfig().getBoolean("Database")) {
+			database = new Database(getConfig().getString("Username"), getConfig().getString("Password"), "jdbc:mysql://localhost:3306/" +getConfig().getString("DatabaseName"));
+			if(database.connected) database.createTable("overcraft", "UUID varchar(255), RANK INTEGER, WIN INTEGER, RANK_WIN INTEGER, KILLS INTEGER, KILL_STREAK INTEGER, COIN INTEGER");
+		}
+		if(getConfig().getBoolean("BungeeCord")) {
+			s1 = -1; s2 = -1; s3 = -1;
+			Bukkit.getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+			new BukkitRunnable() {
+				@Override
+				public void run() {
+					for(Player playerac : Bukkit.getServer().getOnlinePlayers()) if(arenaManager.inArena(playerac) == null) sendBackServer(playerac);
+					if(arenaManager.listArena.size() != 0){
+						boolean write = false;
+						Arena a = arenaManager.listArena.get(0);
+						if(a.getNumbericInfo()[1] != s1){
+							write = true;
+							s1 = a.getNumbericInfo()[1];
+						}
+						if(a.getPlayerList().size() != s2){
+							write = true;
+							s2 = a.getPlayerList().size();
+						}
+						if(a.iscount && s3 != 2){
+							write = true;
+							s3 = 2;
+						}
+						if(a.started() && s3 != 3){
+							write = true;
+							s3 = 3;
+						}
+						if(a.started() && s3 != 1){
+							write = true;
+							s3 = 1;
+						}
+						if(write){
+							ByteArrayDataOutput out = ByteStreams.newDataOutput();
+							out.writeUTF("Overcraft");
+							out.writeUTF(String.valueOf(s1));
+							out.writeUTF(String.valueOf(s2));
+							out.writeUTF(String.valueOf(s3));
+						}
+					}
+				}
+			}.runTaskTimer(Core.plugin, 0, 5);
+		}
 	}
-
+	public static void playSound(Player p, String sound){
+		PacketPlayOutCustomSoundEffect packet = new PacketPlayOutCustomSoundEffect(sound, SoundCategory.VOICE, p.getEyeLocation().getBlockX(), p.getEyeLocation().getBlockY(), p.getEyeLocation().getBlockZ(), 1, 1);
+		((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
+	}
 	@EventHandler
 	public void signCreate(SignChangeEvent e)
 	{
@@ -157,6 +227,57 @@ public class Core extends JavaPlugin implements Listener{
 			}
 		}
 		saveConfig();
+		if(database != null)database.close();
+	}
+	@EventHandler
+	  public void onInventoryClick(InventoryClickEvent event)
+	  {
+	    Inventory inv = event.getInventory();
+	    if (!inv.getTitle().equals("Select Hero")) {
+	      return;
+	    }
+	    if (!(event.getWhoClicked() instanceof Player)) {
+	      return;
+	    }
+	    Player player = (Player)event.getWhoClicked();
+	    ItemStack item = event.getCurrentItem();
+	    if (item.getType() == Material.SUGAR)
+	    {
+	      player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_PLING, 5.0F, 10.0F);
+	      player.chat("/oc class genji");
+	    }
+	    if (item.getType() == Material.PRISMARINE_CRYSTALS)
+	    {
+	      player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_PLING, 5.0F, 10.0F);
+	      player.chat("/oc class soldier76");
+	    }
+	    if (item.getType() == Material.GOLD_NUGGET)
+	    {
+	      player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_PLING, 5.0F, 10.0F);
+	      player.chat("/oc class tracer");
+	    }
+	    if (item.getType() == Material.PRISMARINE_SHARD)
+	    {
+	      player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_PLING, 5.0F, 10.0F);
+	      player.chat("/oc class hanzo");
+	    }
+	    if (item.getType() == Material.CLAY_BALL)
+	    {
+	      player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_PLING, 5.0F, 10.0F);
+	      player.chat("/oc class mei");
+	    }
+	    if (item.getType() == Material.CHORUS_FRUIT)
+	    {
+	      player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_PLING, 5.0F, 10.0F);
+	      player.chat("/oc class roadhog");
+	    }
+	    if (item.getType() == Material.QUARTZ)
+	    {
+	      player.getWorld().playSound(player.getLocation(), Sound.BLOCK_NOTE_PLING, 5.0F, 10.0F);
+	      player.chat("/oc class lucio");
+	    }
+	    event.setCancelled(true);
+	    player.closeInventory();
 	}
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
 		if(cmd.getName().equalsIgnoreCase("oc")){
@@ -185,7 +306,7 @@ public class Core extends JavaPlugin implements Listener{
 						}else if(args[0].equals("create") && args.length >= 5){
 							if(p.getInventory().getItemInMainHand().hasItemMeta() && p.getInventory().getItemInMainHand().getItemMeta().hasDisplayName() && p.getInventory().getItemInMainHand().getItemMeta().getDisplayName().equals(getWand().getItemMeta().getDisplayName()) && p.getInventory().getItemInMainHand().getItemMeta().hasLore()){
 								int[] numbericInfo = {Integer.valueOf(args[2].toString()),Integer.valueOf(args[3].toString()),Integer.valueOf(args[4].toString())};
-								Location[] locationInfo = new Location[Integer.valueOf(args[4].toString())*2+8];
+								Location[] locationInfo = new Location[Integer.valueOf(args[4].toString())*2+10];
 								int i = -2;
 								for(String st : p.getInventory().getItemInMainHand().getItemMeta().getLore()){
 									i++;
@@ -197,26 +318,57 @@ public class Core extends JavaPlugin implements Listener{
 								else p.sendMessage(prefix+ChatColor.RED+"Create arena "+ChatColor.GOLD+args[1].toString()+ChatColor.RED+" failed!");
 							}else p.sendMessage(prefix+ChatColor.RED+"You need to hold the wand /oc wand to get a wand and instruction");
 							return false;
-						}else if(!args[0].equals("list") && !args[0].equals("leave") && !args[0].equals("autojoin")  && !args[0].equals("join") && !args[0].equals("class")) {
+						}else if(!args[0].equals("list") && !args[0].equals("leave") && !args[0].equals("autojoin")  && !args[0].equals("join") && !args[0].equals("class") && !args[0].equals("hero")) {
 							p.sendMessage(prefix+ChatColor.RED+"Command not found use /oc to get all the command");
 							return false;
 						}
 					}else{
-						p.sendMessage(ChatColor.BLUE+""+ChatColor.BOLD+"�����������"+ChatColor.WHITE+""+ChatColor.BOLD+"Over"+ChatColor.GOLD+""+ChatColor.BOLD+"Craft"+ChatColor.BLUE+""+ChatColor.BOLD+"�����������");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"� "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"create "+ChatColor.WHITE+" <arena_name> <min_player_to_start> <max_player> <number_of_capture_points>" +ChatColor.GRAY+" - This command require a wand with a set of locations to get the wand use command below and permission "+ChatColor.LIGHT_PURPLE +"oc.admin");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"� "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"wand"+ChatColor.GRAY+" - Give you a wand with instruction, left click block to save location and right click block to remove location, require"+ChatColor.LIGHT_PURPLE+" oc.admin"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"� "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"remove "+ChatColor.WHITE+" <arena_name_to_remove>"+ChatColor.GRAY+" - Remove an arena require"+ChatColor.LIGHT_PURPLE+" oc.admin"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"� "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"list"+ChatColor.GRAY+" - Open a list of arenas require permission"+ChatColor.LIGHT_PURPLE+" oc.list");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"� "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"autojoin"+ChatColor.GRAY+" - Auto join an arena best use for sorting player require"+ChatColor.LIGHT_PURPLE+" oc.autojoin"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"� "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"join "+ChatColor.WHITE+"<arene_name>"+ChatColor.GRAY+" - Join arena require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"� "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"leave"+ChatColor.GRAY+" - Leave arena require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"� "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"class "+ChatColor.WHITE+"<class_name>"+ChatColor.GRAY+" - Choose hero class require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
-						p.sendMessage(ChatColor.BLUE+""+ChatColor.BOLD+"�������������������������������");
+						p.sendMessage(ChatColor.BLUE+""+ChatColor.BOLD+"==========="+ChatColor.WHITE+""+ChatColor.BOLD+"Over"+ChatColor.GOLD+""+ChatColor.BOLD+"Craft"+ChatColor.BLUE+""+ChatColor.BOLD+"===========");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"> "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"create "+ChatColor.WHITE+" <arena_name> <min_player_to_start> <max_player> <number_of_capture_points>" +ChatColor.GRAY+" - This command require a wand with a set of locations to get the wand use command below and permission "+ChatColor.LIGHT_PURPLE +"oc.admin");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"> "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"wand"+ChatColor.GRAY+" - Give you a wand with instruction, left click block to save location and right click block to remove location, require"+ChatColor.LIGHT_PURPLE+" oc.admin"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"> "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"remove "+ChatColor.WHITE+" <arena_name_to_remove>"+ChatColor.GRAY+" - Remove an arena require"+ChatColor.LIGHT_PURPLE+" oc.admin"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"> "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"list"+ChatColor.GRAY+" - Open a list of arenas require permission"+ChatColor.LIGHT_PURPLE+" oc.list");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"> "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"autojoin"+ChatColor.GRAY+" - Auto join an arena best use for sorting player require"+ChatColor.LIGHT_PURPLE+" oc.autojoin"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"> "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"join "+ChatColor.WHITE+"<arene_name>"+ChatColor.GRAY+" - Join arena require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"> "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"leave"+ChatColor.GRAY+" - Leave arena require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"> "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"class "+ChatColor.WHITE+"<class_name>"+ChatColor.GRAY+" - Choose hero class require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.YELLOW+""+ChatColor.BOLD+"> "+ChatColor.GRAY+"/oc "+ChatColor.GOLD+"hero "+ChatColor.GRAY+" - Open hero GUI require"+ChatColor.LIGHT_PURPLE+" oc.player"+ChatColor.GRAY+" permission");
+						p.sendMessage(ChatColor.BLUE+""+ChatColor.BOLD+"===============================");
 						return false;
 					}
 				}if(args.length >= 1) if(p.hasPermission("oc.list") && args[0].equals("list")){
 						p.sendMessage(prefix+ChatColor.GRAY+"Arenas list:");
 						for(Arena arena : arenaManager.getArrayList()) p.sendMessage(ChatColor.GRAY+"+ "+ChatColor.GOLD+arena.getArenaName() +ChatColor.GREEN+ " (Min players: "+ChatColor.RED+arena.getNumbericInfo()[0] +ChatColor.GREEN+", Max players: "+ChatColor.RED+arena.getNumbericInfo()[1] + ChatColor.GREEN+", Number of capture points: "+ChatColor.RED+arena.getNumbericInfo()[2]+ChatColor.GREEN+")");
+					}else if(args[0].equals("hero") && p.hasPermission("oc.player")){
+						Arena arena = arenaManager.inArena(p);
+						if(arena != null && arena.started() == true){
+							if(arena.getTeam().get(p).equals("BLUE") && arena.spawnBlueRegion.contains(p.getLocation()) || arena.getTeam().get(p).equals("RED") && arena.spawnRedRegion.contains(p.getLocation())){
+						Inventory inv = Bukkit.createInventory(null, 9, "Select Hero");
+					    
+					    ItemStack genji = nameItem(new ItemStack(Material.SUGAR), ChatColor.BOLD+ "" + ChatColor.GRAY + "Genji");
+					    inv.setItem(1, genji);
+					    
+					    ItemStack soldier76 = nameItem(new ItemStack(Material.PRISMARINE_CRYSTALS), ChatColor.BOLD+"" + ChatColor.GRAY + "Soldier: 76");
+					    inv.setItem(2, soldier76);
+					    
+					    ItemStack tracer = nameItem(new ItemStack(Material.GOLD_NUGGET), ChatColor.BOLD +""+ ChatColor.GRAY + "Tracer");
+					    inv.setItem(3, tracer);
+					    
+					    ItemStack hanzo = nameItem(new ItemStack(Material.PRISMARINE_SHARD), ChatColor.BOLD +""+ ChatColor.GRAY + "Hanzo");
+					    inv.setItem(4, hanzo);
+					    
+					    ItemStack mei = nameItem(new ItemStack(Material.CLAY_BALL), ChatColor.BOLD +""+ ChatColor.GRAY + "Mei");
+					    inv.setItem(5, mei);
+					    
+					    ItemStack roadhog = nameItem(new ItemStack(Material.CHORUS_FRUIT), ChatColor.BOLD +""+ ChatColor.GRAY + "Roadhog");
+					    inv.setItem(6, roadhog);
+					    
+					    ItemStack lucio = nameItem(new ItemStack(Material.QUARTZ), ChatColor.BOLD +""+ ChatColor.GRAY + "Lucio");
+					    inv.setItem(7, lucio);
+					    
+					    p.openInventory(inv);
+							}else p.sendMessage(prefix+ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.30")));
+						}else p.sendMessage(prefix+ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.31")));
 					}else if(args[0].equals("leave") && p.hasPermission("oc.player")){
 						Arena arena = arenaManager.inArena(p);
 						if(arena != null){
@@ -314,6 +466,7 @@ public class Core extends JavaPlugin implements Listener{
 							}else p.sendMessage(prefix+ChatColor.translateAlternateColorCodes('&', getConfig().getString("Message.31")));
 						}else p.sendMessage(prefix+ChatColor.RED+"Use /oc class <hero>");
 					}else if(args[0].equals("autojoin") && p.hasPermission("oc.autojoin")){
+						if(!getConfig().getBoolean("BungeeCord")){
 						Arena an = null;
 						int curplayer = 0;
 						if(arenaManager.getArrayList().size() >= 1 && !arenaManager.getArrayList().get(0).started() && arenaManager.getArrayList().get(0).getNumbericInfo()[1] > arenaManager.getArrayList().get(0).getPlayerList().size()) {
@@ -328,18 +481,56 @@ public class Core extends JavaPlugin implements Listener{
 						}
 						if(an == null) p.sendMessage(prefix + ChatColor.RED+"No arena left to join");
 						else an.playerJoin(p);
+						}else p.sendMessage(prefix + ChatColor.RED + "You in the leave queue, when you leave join game again");
 					}else if(args[0].equals("join") && p.hasPermission("oc.player")){
+						if(!getConfig().getBoolean("BungeeCord")){
 						if(args.length >= 2){
 							String arenaName = args[1].toString();
 							Arena arena = arenaManager.getArenaByName(arenaName);
 							if(arena != null && arena.getNumbericInfo()[1] > arena.getPlayerList().size() && !arena.started()) arena.playerJoin(p);
 							else p.sendMessage(prefix+ChatColor.RED+"Arena not found or full or ingame");
 						}else p.sendMessage(prefix+ChatColor.RED+"Wrong! Use /oc join <arenaName>");
+						}else p.sendMessage(prefix + ChatColor.RED + "You in the leave queue, when you leave join game again");
 					}else p.sendMessage(prefix+ChatColor.RED+"Invalid command or don't have permission for this");
 			}else getLogger().info("You can just use this command in-game");
 		}
 	    return false;
 	}
+	@EventHandler
+	public void texturePack(PlayerResourcePackStatusEvent e){
+			if(e.getStatus() == Status.DECLINED) sendMessage(e.getPlayer(), 20);
+			if(e.getStatus() == Status.ACCEPTED) sendMessage(e.getPlayer(), 21);
+			if(e.getStatus() == Status.SUCCESSFULLY_LOADED) sendMessage(e.getPlayer(), 22);
+			if(e.getStatus() == Status.FAILED_DOWNLOAD) sendMessage(e.getPlayer(), 23);
+		
+	}
+	public void sendMessage(Player p, int num){
+		p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message."+num).replace("%PLAYER%", p.getName())));
+	}
+	@EventHandler
+	public void join(PlayerJoinEvent e){
+		e.getPlayer().setResourcePack("https://drive.google.com/uc?export=download&id=0Bwjo6ZpU7OWTdFd0V0l4T3o3Ums");
+		if(e.getPlayer().hasPermission("oc.admin") && getConfig().getBoolean("Database") && database != null && !database.connected) e.getPlayer().sendMessage(prefix + ChatColor.RED+ "Database is down, check it now!!!!");
+		if(getConfig().getBoolean("BungeeCord")){
+			e.getPlayer().setGameMode(GameMode.ADVENTURE);
+			if(arenaManager.listArena.size() == 0) sendBackServer(e.getPlayer());
+			else arenaManager.listArena.get(0).playerJoin(e.getPlayer());
+		}      
+	}
+	
+	public static void sendBackServer(Player p){
+		ByteArrayDataOutput out = ByteStreams.newDataOutput();
+		out.writeUTF("Connect");
+		out.writeUTF(plugin.getConfig().getString("FallBackServer"));
+		p.sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
+	}
+	private ItemStack nameItem(ItemStack item, String name)
+	  {
+	    ItemMeta meta = item.getItemMeta();
+	    meta.setDisplayName(name);
+	    item.setItemMeta(meta);
+	    return item;
+	  }
 	public static void sendTitle(Player player, Integer fadeIn, Integer stay, Integer fadeOut, String title, String subtitle)
     {
         PlayerConnection connection = ((CraftPlayer)player).getHandle().playerConnection;
@@ -408,6 +599,8 @@ public class Core extends JavaPlugin implements Listener{
 					case "leave":
 						e.getPlayer().chat("/oc leave");
 						break;
+					case "hero":
+						e.getPlayer().chat("/oc hero");
 					}
 				}
 			}
@@ -417,12 +610,12 @@ public class Core extends JavaPlugin implements Listener{
 				if(e.getAction() == Action.LEFT_CLICK_BLOCK) {
 					ItemMeta mt = e.getPlayer().getInventory().getItemInMainHand().getItemMeta();
 					List<String> lore = mt.getLore();
-					if(lore.size() <= 8) e.getPlayer().sendMessage(prefix+ChatColor.GREEN+instructor[lore.size()]);
-					else if((lore.size() - 8) % 2 == 0){
-						if(((lore.size()-8)/2+1) > 1) e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set lower region for capture point "+((lore.size()-8)/2+1)+". If "+((lore.size()-8)/2)+" capture point(s) is enough for you please use command /oc create {your_arena_name} {min_players} {max_players} "+((lore.size()-8)/2));
+					if(lore.size() <= 10) e.getPlayer().sendMessage(prefix+ChatColor.GREEN+instructor[lore.size()]);
+					else if((lore.size() - 10) % 2 == 0){
+						if(((lore.size()-10)/2+1) > 1) e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set lower region for capture point "+((lore.size()-10)/2+1)+". If "+((lore.size()-10)/2)+" capture point(s) is enough for you please use command /oc create {your_arena_name} {min_players} {max_players} "+((lore.size()-10)/2));
 						else e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set lower region for capture point "+((lore.size()-8)/2+1));
 					}else {
-						e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set upper region for capture point "+((lore.size()-8)/2+1));
+						e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set upper region for capture point "+((lore.size()-10)/2+1));
 					}
 					lore.add(ChatColor.GOLD+""+e.getClickedBlock().getX() + " " + e.getClickedBlock().getY() + " " + e.getClickedBlock().getZ() + " " + e.getClickedBlock().getWorld().getName());
 					mt.setLore(lore);
@@ -433,12 +626,12 @@ public class Core extends JavaPlugin implements Listener{
 					lore.remove(lore.size()-1);
 					mt.setLore(lore);
 					e.getPlayer().getInventory().getItemInMainHand().setItemMeta(mt);
-					if(lore.size() <= 8) e.getPlayer().sendMessage(prefix+ChatColor.GREEN+instructor[lore.size()-1]);
-					else if((lore.size() - 9) % 2 == 0){
-						if(((lore.size()-8+1)/2) > 1) e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set lower region for capture point "+((lore.size()-8)/2+1)+". If "+((lore.size()-8)/2)+" capture point(s) is enough for you please use command /oc create {your_arena_name} {min_players} {max_players} "+((lore.size()-8)/2));
-						else e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set lower region for capture point "+((lore.size()-8)/2+1));
+					if(lore.size() <= 10) e.getPlayer().sendMessage(prefix+ChatColor.GREEN+instructor[lore.size()-1]);
+					else if((lore.size() - 10) % 2 == 0){
+						if(((lore.size()-10+1)/2) > 1) e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set lower region for capture point "+((lore.size()-10)/2+1)+". If "+((lore.size()-10)/2)+" capture point(s) is enough for you please use command /oc create {your_arena_name} {min_players} {max_players} "+((lore.size()-10)/2));
+						else e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set lower region for capture point "+((lore.size()-10)/2+1));
 					}else {
-						e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set upper region for capture point "+((lore.size()-8)/2));
+						e.getPlayer().sendMessage(prefix+ChatColor.GREEN+"Set upper region for capture point "+((lore.size()-10)/2));
 					}
 				}
 				e.setCancelled(true);

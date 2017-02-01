@@ -3,12 +3,13 @@ package com.Tuong.Heros;
 import java.util.Arrays;
 import java.util.Set;
 
+import org.bukkit.Achievement;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_9_R2.entity.CraftEnderDragon;
-import org.bukkit.craftbukkit.v1_9_R2.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.v1_10_R1.entity.CraftEnderDragon;
+import org.bukkit.craftbukkit.v1_10_R1.entity.CraftLivingEntity;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EnderDragon;
@@ -21,13 +22,13 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.player.PlayerAchievementAwardedEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
@@ -55,6 +56,7 @@ public class Hanzo implements Listener{
 	private int maxhealth;
 	private boolean start,msg,swap;
 	public Hanzo(Player player, Arena arena){
+		player.removeAchievement(Achievement.OPEN_INVENTORY);
 		player.getInventory().clear();
 		player.getInventory().setHeldItemSlot(8);
 		player.getInventory().setItem(0, new ItemStack(Material.ARROW));
@@ -275,9 +277,10 @@ public class Hanzo implements Listener{
 	}
 	
 	@EventHandler
-	public void rekall(PlayerItemHeldEvent e){
-		if(e.getPlayer().equals(player)){
+	public void rekall(PlayerAchievementAwardedEvent e){
+		if(e.getPlayer().equals(player) && e.getAchievement().equals(Achievement.OPEN_INVENTORY)){
 			e.setCancelled(true);
+			e.getPlayer().closeInventory();
 			if(e.getPlayer().equals(player) && arena.death.contains(player)) return;
 			if(swap) {
 				swap = false;

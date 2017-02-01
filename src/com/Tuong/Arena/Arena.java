@@ -11,15 +11,19 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.craftbukkit.v1_9_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_10_R1.entity.CraftPlayer;
 import org.bukkit.entity.Firework;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -33,13 +37,12 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerResourcePackStatusEvent;
-import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.DisplaySlot;
@@ -47,6 +50,7 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
+import org.bukkit.util.Vector;
 
 import com.Tuong.Heros.Genji;
 import com.Tuong.Heros.Hanzo;
@@ -59,9 +63,9 @@ import com.Tuong.OverCraftCore.Core;
 import com.Tuong.Region.Cuboid;
 
 import net.md_5.bungee.api.ChatColor;
-import net.minecraft.server.v1_9_R2.IChatBaseComponent;
-import net.minecraft.server.v1_9_R2.PacketPlayOutTitle;
-import net.minecraft.server.v1_9_R2.PlayerConnection;
+import net.minecraft.server.v1_10_R1.IChatBaseComponent;
+import net.minecraft.server.v1_10_R1.PacketPlayOutTitle;
+import net.minecraft.server.v1_10_R1.PlayerConnection;
 
 public class Arena implements Listener{
 	/*
@@ -71,7 +75,8 @@ public class Arena implements Listener{
 	 * location[4-5] regionspawnred 
 	 * location[6] lobby
 	 * location[7] return point
-	 * location[8-9] capturepoint1
+	 * location[8-9] Regoin
+	 * location[10-11] capturepoint1
 	 * ...
 	 * location[n-1 - n] capturepointn 
 	 * int[0] minplayer
@@ -81,7 +86,7 @@ public class Arena implements Listener{
 	private Location[] locationInfo;
 	private int[] numbericInfo;
 	private String arenaName;
-	public Cuboid spawnRedRegion,spawnBlueRegion;
+	public Cuboid spawnRedRegion,spawnBlueRegion,arenaRegion;
 	private Cuboid[] captureArea;
 	private int[] capturePoint;
 	private int maxsecond = 300;
@@ -91,7 +96,9 @@ public class Arena implements Listener{
 	public HashMap<Player,float[]> expStore;
 	public HashMap<Player,String> team;
 	public HashMap<Player,Object> playerList;	
-	private boolean start,iscount,overtime,msg;
+	
+	private boolean start,overtime,msg;
+	public boolean iscount;
 	public ArrayList<Player> death;
 	private ScoreboardManager manager;
 	private BossBar boss;
@@ -108,7 +115,8 @@ public class Arena implements Listener{
 		this.spawnBlueRegion = new Cuboid(locationInfo[1], locationInfo[2]);
 		this.spawnRedRegion = new Cuboid(locationInfo[4], locationInfo[5]);
 		this.captureArea = new Cuboid[numbericInfo[2]];
-		for(int i = 0; i < numbericInfo[2]; i++)captureArea[i] = new Cuboid(locationInfo[9+i*2], locationInfo[9+i*2-1]);
+		for(int i = 0; i < numbericInfo[2]; i++)captureArea[i] = new Cuboid(locationInfo[11+i*2], locationInfo[11+i*2-1]);
+		this.arenaRegion = new Cuboid(locationInfo[8],locationInfo[9]);
 		this.capturePoint = new int[numbericInfo[2]];
 		this.captureObjective = 0;
 		this.playerList = new HashMap<Player,Object>();
@@ -127,8 +135,8 @@ public class Arena implements Listener{
 				for(Player player : playerList.keySet()){
 					Firework firework = player.getWorld().spawn(player.getLocation(), Firework.class);
 					FireworkMeta data = (FireworkMeta) firework.getFireworkMeta();
-					if((blue == 1 && team.get(player).equals("BLUE")) || !(blue == 1 && team.get(player).equals("BLUE")) || blue == 0)data.addEffects(FireworkEffect.builder().withColor(Color.GREEN).with(Type.BURST).trail(true).flicker(false).build());
-					else data.addEffects(FireworkEffect.builder().withColor(Color.RED).with(Type.BURST).trail(true).flicker(false).build());
+					if((blue == 1 && team.get(player).equals("BLUE")) || (blue == 0 && team.get(player).equals("RED")))data.addEffects(FireworkEffect.builder().withColor(Color.GREEN).with(Type.BURST).trail(true).flicker(false).build());
+					else data.addEffects(FireworkEffect.builder().withColor(Color.BLACK).with(Type.BURST).trail(true).flicker(false).build());
 					data.setPower(2);
 					firework.setFireworkMeta(data);
 				}
@@ -152,7 +160,7 @@ public class Arena implements Listener{
 		time.setDisplayName(ChatColor.WHITE+""+ChatColor.BOLD+"OVER"+ChatColor.GOLD+""+ChatColor.BOLD+"CRAFT");
 		Score blank = time.getScore(ChatColor.GRAY+"~~~~~~~~~~~~~~~~~~");
 		blank.setScore(15);
-		Score player = time.getScore(ChatColor.RED+""+ChatColor.BOLD+"� "+ChatColor.YELLOW+""+ChatColor.BOLD+"Player Info:");
+		Score player = time.getScore(ChatColor.GOLD+""+ChatColor.BOLD+"> "+ChatColor.YELLOW+""+ChatColor.BOLD+"Player Info:");
 		player.setScore(14);
 		Score player_info1 = time.getScore(ChatColor.GRAY+"Name: "+ChatColor.WHITE+p.getName());
 		player_info1.setScore(12);
@@ -165,15 +173,15 @@ public class Arena implements Listener{
 		if(i == 1){
 			Score player_info3 = time.getScore(ChatColor.GRAY+"Hero: "+ChatColor.WHITE+hero(p));
 			player_info3.setScore(10);
-			Score game = time.getScore(ChatColor.RED+""+ChatColor.BOLD+"� "+ChatColor.YELLOW+""+ChatColor.BOLD+"Game Info:");
+			Score game = time.getScore(ChatColor.GOLD+""+ChatColor.BOLD+"> "+ChatColor.YELLOW+""+ChatColor.BOLD+"Game Info:");
 			game.setScore(8);
 			String timer = "";
 			if(second/60 > 9) timer = String.valueOf(second/60); else timer = "0"+String.valueOf(second/60);
 			timer += ":";
 			if(second%60 > 9) timer += String.valueOf(second%60); else timer += "0"+String.valueOf(second%60);
 			Score game_1 = time.getScore(ChatColor.BLUE+"BLUE"+ChatColor.GOLD+" Wins in: "+ChatColor.GREEN+timer);
-			game_1.setScore(7);
 			Score game_2 = time.getScore(ChatColor.GRAY+"Objective Captured: "+ChatColor.WHITE+captureObjective+ChatColor.GRAY+"/"+ChatColor.WHITE+getNumbericInfo()[2]);
+			game_1.setScore(7);
 			game_2.setScore(6);
 			if(capturePoint[captureObjective] < 0) capturePoint[captureObjective] = 0;
 			Score game_3 = time.getScore(ChatColor.GRAY+"Objective Point: "+ChatColor.WHITE+capturePoint[captureObjective]+ChatColor.GRAY+"/"+Core.maxpoint);
@@ -182,7 +190,7 @@ public class Arena implements Listener{
 			blank2.setScore(4);
 		}
 		int[] t = getTeamSize();
-		Score arena = time.getScore(ChatColor.RED+""+ChatColor.BOLD+"� "+ChatColor.YELLOW+""+ChatColor.BOLD+"Arena Info:");
+		Score arena = time.getScore(ChatColor.GOLD+""+ChatColor.BOLD+"> "+ChatColor.YELLOW+""+ChatColor.BOLD+"Arena Info:");
 		arena.setScore(3);
 		Score arena_1 = time.getScore(ChatColor.GRAY+"Arena: "+ChatColor.WHITE+getArenaName());
 		arena_1.setScore(2);
@@ -222,8 +230,8 @@ public class Arena implements Listener{
 	}
 	@EventHandler
 	public void regionMove(PlayerMoveEvent e){
-		if(!playerList.containsKey(e.getPlayer())) return;
-		if(death.contains(e.getPlayer()) && (e.getFrom().getBlockX() != e.getTo().getBlockX() || e.getFrom().getBlockZ() != e.getTo().getBlockZ())) {
+		if(playerList != null && !playerList.containsKey(e.getPlayer())) return;
+		if(death != null && death.contains(e.getPlayer()) && (e.getFrom().getBlockX() != e.getTo().getBlockX() || e.getFrom().getBlockZ() != e.getTo().getBlockZ())) {
 			sendMessage(e.getPlayer(),1);
 			e.setCancelled(true);
 		}
@@ -231,6 +239,7 @@ public class Arena implements Listener{
 		if((spawnRedRegion.contains(to.getBlockX(), to.getBlockY(), to.getBlockZ()) && team.get(e.getPlayer()).equals("BLUE")) || (spawnBlueRegion.contains(to.getBlockX(), to.getBlockY(), to.getBlockZ())&& team.get(e.getPlayer()).equals("RED"))){
 			e.setCancelled(true);
 		}
+		if(!arenaRegion.contains(to) && start) e.getPlayer().setHealth(0.0);
 	}
 	@EventHandler
 	public void damageInGame(EntityDamageEvent e){
@@ -252,8 +261,50 @@ public class Arena implements Listener{
 		if(playerList.containsKey(e.getPlayer()))e.setCancelled(true);
 	}
 	@EventHandler
+	public void regen(EntityRegainHealthEvent e){
+		if(e.getEntity() instanceof Player && playerList.containsKey((Player)e.getEntity()) && e.getRegainReason() == RegainReason.SATIATED) e.setCancelled(true);
+	}
+	@EventHandler
 	public void pick5(PlayerPickupItemEvent e){
-		if(playerList.containsKey(e.getPlayer()))e.setCancelled(true);
+		if(playerList.containsKey(e.getPlayer())) {
+			e.setCancelled(true);
+			if(e.getItem().getItemStack().getType() == Material.IRON_INGOT && e.getPlayer().getHealth() != e.getPlayer().getMaxHealth()){
+				if(e.getPlayer().getHealth() != e.getPlayer().getMaxHealth()){
+					if(e.getPlayer().getHealth() < e.getPlayer().getMaxHealth()-10){
+						e.getPlayer().setHealth(e.getPlayer().getHealth()+10);
+					}else e.getPlayer().setHealth(e.getPlayer().getMaxHealth());
+				}
+				if(e.getItem() != null) e.getItem().remove();
+				Location loc = e.getItem().getLocation().getBlock().getLocation();
+				new BukkitRunnable() {
+					@Override
+					public void run() {
+						Block b = loc.getBlock();
+						Item t = loc.getWorld().dropItem(b.getLocation().clone().add(b.getLocation().getX() > 0 ? 0.5 : -0.5,1,b.getLocation().getZ() > 0 ? 0.5 : -0.5), new ItemStack(Material.IRON_INGOT));
+						t.setVelocity(new Vector(0,0,0));
+						t.teleport(b.getLocation().clone().add(b.getLocation().getX() > 0 ? 0.5 : -0.5,2,b.getLocation().getZ() > 0 ? 0.5 : -0.5));
+						t.setMetadata(arenaName, new FixedMetadataValue(Core.plugin, "HEALTH"));
+					}
+				}.runTaskLater(Core.plugin, 600);
+				return;
+			}else if(e.getItem().getItemStack().getType() == Material.GOLD_INGOT && e.getPlayer().getHealth() != e.getPlayer().getMaxHealth()){
+				if(e.getPlayer().getHealth() < e.getPlayer().getMaxHealth()-30){
+					e.getPlayer().setHealth(e.getPlayer().getHealth()+30);
+				}else e.getPlayer().setHealth(e.getPlayer().getMaxHealth());
+				Location loc = e.getItem().getLocation().getBlock().getLocation();
+				if(e.getItem() != null) e.getItem().remove();
+				new BukkitRunnable() {
+					@Override
+					public void run() {
+						Block b = loc.getBlock();
+						Item t = loc.getWorld().dropItem(b.getLocation().clone().add(b.getLocation().getX() > 0 ? 0.5 : -0.5,1,b.getLocation().getZ() > 0 ? 0.5 : -0.5), new ItemStack(Material.GOLD_INGOT));
+						t.setVelocity(new Vector(0,0,0));
+						t.teleport(b.getLocation().clone().add(b.getLocation().getX() > 0 ? 0.5 : -0.5,2,b.getLocation().getZ() > 0 ? 0.5 : -0.5));
+						t.setMetadata(arenaName, new FixedMetadataValue(Core.plugin, "HEALTH"));
+					}
+				}.runTaskLater(Core.plugin, 600);
+			}
+		}
 	}
 	@EventHandler
 	public void drop2(InventoryClickEvent e){
@@ -327,7 +378,6 @@ public class Arena implements Listener{
 		if(playerList.containsKey(e.getPlayer())) e.setCancelled(true);
 	}
 	public void playerJoin(Player player){
-		player.setResourcePack("https://dl.dropboxusercontent.com/s/15qai9g0hbm01e5/OverCraft_T.zip");
 		player.setHealth(player.getMaxHealth());
 		player.setFoodLevel(20);
 		playerList.put(player, null);
@@ -337,6 +387,7 @@ public class Arena implements Listener{
 		player.teleport(cac.add(0,1,0));
 		player.setGameMode(GameMode.ADVENTURE);
 		player.getInventory().clear();
+		player.getInventory().setHeldItemSlot(0);
 		player.getInventory().addItem(Core.getTeamCompass());
 		float[] g = new float[2];
 		g[0] = player.getLevel();
@@ -351,19 +402,10 @@ public class Arena implements Listener{
 		}
 		for(Player p : playerList.keySet())update(p,0);
 	}
-	@EventHandler
-	public void texturePack(PlayerResourcePackStatusEvent e){
-		if(playerList.containsKey(e.getPlayer())){
-			if(e.getStatus() == Status.DECLINED) sendMessage(e.getPlayer(), 20);
-			if(e.getStatus() == Status.ACCEPTED) sendMessage(e.getPlayer(), 21);
-			if(e.getStatus() == Status.SUCCESSFULLY_LOADED) sendMessage(e.getPlayer(), 22);
-			if(e.getStatus() == Status.FAILED_DOWNLOAD) sendMessage(e.getPlayer(), 23);
-		}
-	}
 	public void countDown(){
 		broadcast(8);
 		new BukkitRunnable() {
-			int t = 8;
+			int t = Core.plugin.getConfig().getInt("DefaultCountDownSeconds");
 			@Override
 			public void run() {
 				if(iscount == false){
@@ -412,7 +454,7 @@ public class Arena implements Listener{
 	}
 	@EventHandler
 	public void useCommand(PlayerCommandPreprocessEvent e){
-		if(playerList.containsKey(e.getPlayer()) && !e.getMessage().equals("/oc leave") && !(e.getMessage().contains("/oc class") && e.getMessage().indexOf("/oc class") == 0)) e.setCancelled(true);
+		if(playerList.containsKey(e.getPlayer()) && !e.getMessage().equals("/oc leave") && !e.getMessage().equals("/oc hero") && !(e.getMessage().contains("/oc class") && e.getMessage().indexOf("/oc class") == 0)) e.setCancelled(true);
 	}
 	public void play(){
 		for(Player p : team.keySet()) {
@@ -426,17 +468,30 @@ public class Arena implements Listener{
 			playerList.put(p, new Tracer(p,this));
 			//add default hero
 			boss.addPlayer(p);
-			if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
-			else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
+			if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+			else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+		}
+		for(Block b : arenaRegion.getBlocks()) {
+			if(b.getType() == Material.DAYLIGHT_DETECTOR_INVERTED) {
+				Item t = b.getWorld().dropItem(b.getLocation().clone().add(b.getLocation().getX() > 0 ? 0.5 : -0.5,4,b.getLocation().getZ() > 0 ? 0.5 : -0.5), new ItemStack(Material.IRON_INGOT));
+				t.setVelocity(new Vector(0,0,0));
+				t.setMetadata(arenaName, new FixedMetadataValue(Core.plugin, "HEALTH"));
+			}else if(b.getType() == Material.DAYLIGHT_DETECTOR) {
+				Item t = b.getWorld().dropItem(b.getLocation().clone().add(b.getLocation().getX() > 0 ? 0.5 : -0.5,4,b.getLocation().getZ() > 0 ? 0.5 : -0.5), new ItemStack(Material.GOLD_INGOT));
+				t.setVelocity(new Vector(0,0,0));
+				t.setMetadata(arenaName, new FixedMetadataValue(Core.plugin, "HEALTH"));
+			}
 		}
 		boss.setVisible(true);
 		broadcast(12);
 		new BukkitRunnable() {
 			@Override
 			public void run() {
-				if(capturePoint[captureObjective] >= Core.maxpoint){
+				if(capturePoint[captureObjective] >= Core.maxpoint){ 
 					if(captureObjective+1 >= getNumbericInfo()[2]){
 						//win
+						boss.setTitle("Objective Score: "+Core.maxpoint+"/"+Core.maxpoint);
+						boss.setProgress(1);
 						for(Player p : playerList.keySet()) {
 							if(team.get(p).equals("RED")) {
 								sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
@@ -454,8 +509,8 @@ public class Arena implements Listener{
 					msg = false;
 					second += maxsecond;
 					captureObjective++;
-					for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
-					else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
+					for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+					else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
 				}
 				boolean b = false;
 				if(capturePoint[captureObjective] < 0) capturePoint[captureObjective] = 0;
@@ -482,6 +537,8 @@ public class Arena implements Listener{
 					if(capturePoint[captureObjective] >= Core.maxpoint){
 						if(captureObjective+1 >= getNumbericInfo()[2]){
 							//win
+							boss.setTitle("Objective Score: "+Core.maxpoint+"/"+Core.maxpoint);
+							boss.setProgress(1);
 							for(Player p : playerList.keySet()) {
 								if(team.get(p).equals("RED")) {
 									sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
@@ -499,8 +556,8 @@ public class Arena implements Listener{
 						msg = false;
 						second += maxsecond;
 						captureObjective++;
-						for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
-						else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.RED+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.RED+")"); 
+						for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+						else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
 					}
 				}else if(second <= 0 && b == false){
 					//win
@@ -535,6 +592,8 @@ public class Arena implements Listener{
 				if(capturePoint[captureObjective] >= Core.maxpoint){
 					if(captureObjective+1 >= getNumbericInfo()[2]){
 						//win
+						boss.setTitle("Objective Score: "+Core.maxpoint+"/"+Core.maxpoint);
+						boss.setProgress(1);
 						for(Player p : playerList.keySet()) {
 							if(team.get(p).equals("RED")) {
 								sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
@@ -617,9 +676,13 @@ public class Arena implements Listener{
     if (playerList.containsKey(event.getEntity())) {
     Player player = (Player) event.getEntity();
     if(player.getInventory().getChestplate() != null) player.getInventory().getChestplate().setDurability((short) 0);
+    if((spawnBlueRegion.contains(player.getLocation()) && team.get(player).equals("BLUE")) || (spawnRedRegion.contains(player.getLocation()) && team.get(player).equals("RED"))){
+    	event.setCancelled(true);
+    }
     }
     }
 	public void refresh(){
+		for(Item t : arenaRegion.getWorld().getEntitiesByClass(Item.class)) if(t.hasMetadata(arenaName)) t.remove();
 		while(!playerList.isEmpty()) for(Player p : playerList.keySet()){
 			playerLeave(p);
 			break;
