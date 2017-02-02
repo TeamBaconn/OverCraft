@@ -1,6 +1,6 @@
 name: OverCraft
 main: com.Tuong.OverCraftCore.Core
-version: 6.6
+version: 6.7
 author: NguyenLamTuong
 commands:
     oc:

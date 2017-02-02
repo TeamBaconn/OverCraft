@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.bukkit.entity.Player;
+
 import com.Tuong.OverCraftCore.Core;
 import com.mysql.jdbc.Connection;
 
@@ -37,26 +39,24 @@ public class Database {
 		            e.printStackTrace();
 		        }
 	}
-	
-	public Object[] getInfo(String UUID, String table){
-		String sql = "SELECT * FROM "+table+" WHERE UUID='"+UUID+"'";
+	public void add(Player p, int win, int rank_win, int kill, int killstreak, int rank, int coin){
+		String sql = "SELECT * FROM overcraft WHERE UUID='"+p.getUniqueId()+"'";
 		try {
-		PreparedStatement myPreparedStatement = connection.prepareStatement(sql);
-		ResultSet results;
-			results = myPreparedStatement.executeQuery();
+			PreparedStatement myPreparedStatement = connection.prepareStatement(sql);
+			ResultSet results = myPreparedStatement.executeQuery();
 			if (!results.next()) {
-				
+			     PreparedStatement myPreparedStatement1 = connection.prepareStatement("INSERT INTO overcraft(UUID,RANK,WIN,RANK_WIN,KILLS,KILL_STREAK,COIN) VALUES ('"+p.getUniqueId()+"','"+rank+"','"+win+"','"+rank_win+"','"+kill+"','"+killstreak+"','"+coin+"')");
+			     myPreparedStatement1.executeUpdate();
 			} else {
-			    Object[] obj = new Object[6];
-			    
-			    return obj;
+				int kill_st = results.getInt("KILL_STREAK");
+				if(killstreak > kill_st) kill_st = killstreak;
+				 PreparedStatement myPreparedStatement2 = connection.prepareStatement("UPDATE overcraft SET RANK = '"+(results.getInt("RANK")+rank)+"', WIN = '"+(results.getInt("WIN")+win)+"', RANK_WIN = '"+(results.getInt("RANK_WIN")+rank_win)+"', KILLS = '"+(results.getInt("KILLS")+kill)+"', KILL_STREAK='"+kill_st+"', COIN ='"+(coin+results.getInt("COIN"))+"' WHERE UUID = '"+p.getUniqueId()+"'");
+				 myPreparedStatement2.executeUpdate();
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return null;
 	}
-	
 	public void close(){
 		 try {
 			if(connection!=null && !connection.isClosed())connection.close();

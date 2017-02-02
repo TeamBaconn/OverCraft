@@ -19,6 +19,7 @@ import org.bukkit.craftbukkit.v1_10_R1.entity.CraftPlayer;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -96,7 +97,7 @@ public class Arena implements Listener{
 	public HashMap<Player,float[]> expStore;
 	public HashMap<Player,String> team;
 	public HashMap<Player,Object> playerList;	
-	
+	private HashMap<Player,ArenaPlayerScore> score_manager;
 	private boolean start,overtime,msg;
 	public boolean iscount;
 	public ArrayList<Player> death;
@@ -135,8 +136,8 @@ public class Arena implements Listener{
 				for(Player player : playerList.keySet()){
 					Firework firework = player.getWorld().spawn(player.getLocation(), Firework.class);
 					FireworkMeta data = (FireworkMeta) firework.getFireworkMeta();
-					if((blue == 1 && team.get(player).equals("BLUE")) || (blue == 0 && team.get(player).equals("RED")))data.addEffects(FireworkEffect.builder().withColor(Color.GREEN).with(Type.BURST).trail(true).flicker(false).build());
-					else data.addEffects(FireworkEffect.builder().withColor(Color.BLACK).with(Type.BURST).trail(true).flicker(false).build());
+					if((blue == 1 && team.get(player).equals("BLUE")) || (blue == 0 && team.get(player).equals("RED")))data.addEffects(FireworkEffect.builder().withColor(Color.RED).with(Type.BURST).trail(true).flicker(false).build());
+					else data.addEffects(FireworkEffect.builder().withColor(Color.WHITE).with(Type.BURST).trail(true).flicker(false).build());
 					data.setPower(2);
 					firework.setFireworkMeta(data);
 				}
@@ -248,6 +249,20 @@ public class Arena implements Listener{
 			if((playerList.containsKey(p) && start == false) || death.contains(p)) e.setCancelled(true);
 		}
 	}
+	public void message(Player p, int coin,int win){
+		if(p.hasPermission("oc.vip")) coin = coin * 2;
+		p.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+"▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+		p.sendMessage("");
+		p.sendMessage(ChatColor.WHITE+""+ChatColor.BOLD+"                             Match Summary");
+		p.sendMessage("");
+		p.sendMessage(ChatColor.GOLD+"Total Earned Coins: "+ChatColor.YELLOW+ coin);
+		if(p.hasPermission("oc.vip")) p.sendMessage(ChatColor.DARK_GREEN+"       Vip bonus "+ChatColor.GREEN +"x2 coins");
+		p.sendMessage(ChatColor.AQUA+"Best Killstreak: "+ChatColor.BLUE + score_manager.get(p).getBestKillStreak());
+		p.sendMessage(ChatColor.RED+"Total Kills: "+ChatColor.DARK_RED+score_manager.get(p).kill);
+		p.sendMessage("");
+		p.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+"▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+		Core.database.add(p, win, 0, score_manager.get(p).kill, score_manager.get(p).getBestKillStreak(), 0, coin);
+	}
 	@EventHandler
 	public void antiSwitch(PlayerItemHeldEvent e){
 		if(playerList.containsKey(e.getPlayer())) e.setCancelled(true);
@@ -342,6 +357,7 @@ public class Arena implements Listener{
 		if(playerList.containsKey(e.getPlayer())){
 			playerLeave(e.getPlayer());			
 			broadcast(5);
+			if(score_manager.containsKey(e.getPlayer())) score_manager.remove(e.getPlayer());
 		}
 	}
 	public void broadcast(int i){
@@ -436,6 +452,17 @@ public class Arena implements Listener{
 			e.setKeepInventory(true);
 			e.setKeepLevel(true);
 			e.setDroppedExp(0);
+			score_manager.get(e.getEntity()).resetKillStreak();
+			if(e.getEntity().getKiller() instanceof Player && playerList.containsKey(e.getEntity().getKiller())){
+				score_manager.get(e.getEntity().getKiller()).addKill();
+				int i = score_manager.get(e.getEntity().getKiller()).kill_streak;
+				if(i > 4 && i % 5 == 0) sendTitle(e.getEntity().getKiller(), 10, 30, 10, ChatColor.AQUA+""+i+" PLAYER KILL STREAK!", "");
+			}else if(e.getEntity().getKiller() instanceof Projectile && ((Projectile)e.getEntity().getKiller()).getShooter() instanceof Player && playerList.containsKey(((Projectile)e.getEntity().getKiller()).getShooter())){
+				Player killer = (Player) ((Projectile)e.getEntity().getKiller()).getShooter();
+				score_manager.get(killer).addKill();
+				int i = score_manager.get(killer).kill_streak;
+				if(i > 4 && i % 5 == 0) sendTitle(killer, 10, 30, 10, ChatColor.AQUA+""+i+" PLAYER KILL STREAK!", "");
+			}
 		}
 	}
 	@EventHandler
@@ -456,8 +483,12 @@ public class Arena implements Listener{
 	public void useCommand(PlayerCommandPreprocessEvent e){
 		if(playerList.containsKey(e.getPlayer()) && !e.getMessage().equals("/oc leave") && !e.getMessage().equals("/oc hero") && !(e.getMessage().contains("/oc class") && e.getMessage().indexOf("/oc class") == 0)) e.setCancelled(true);
 	}
+	public void save(Player p){
+		
+	}
 	public void play(){
 		for(Player p : team.keySet()) {
+			score_manager.put(p, new ArenaPlayerScore());
 			p.getInventory().clear();
 			Location cac = getLocationInfo()[0].clone();
 			Location loz = getLocationInfo()[3].clone();
@@ -468,8 +499,10 @@ public class Arena implements Listener{
 			playerList.put(p, new Tracer(p,this));
 			//add default hero
 			boss.addPlayer(p);
-			if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
-			else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+			if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+((char)(captureObjective+65))+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+			else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+((char)(captureObjective+65))+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+			if(team.get(p).equals("BLUE")) Core.playSound(p, "athena.def_obj_a");
+			else Core.playSound(p, "athena.att_obj_a");
 		}
 		for(Block b : arenaRegion.getBlocks()) {
 			if(b.getType() == Material.DAYLIGHT_DETECTOR_INVERTED) {
@@ -496,21 +529,35 @@ public class Arena implements Listener{
 							if(team.get(p).equals("RED")) {
 								sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
 								sendMessage(p, 13);
+								message(p, Core.plugin.getConfig().getInt("CoinsWin"),1);
 							}else{
 								sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.16")), "");
 								sendMessage(p, 14);
+								message(p, Core.plugin.getConfig().getInt("CoinsLose"),0);
 							}
 						}
 						winRefresh(2);
 						this.cancel();
 						return;
+					} else if(captureObjective < 5){
+						for(Player p : team.keySet()) {
+							Core.playSound(p, "athena.cap_obj_"+((char)(captureObjective+65)));
+							new BukkitRunnable() {
+								@Override
+								public void run() {
+									if(team.get(p).equals("RED")){
+										Core.playSound(p, "athena.com_obj_"+((char)(captureObjective+65)));
+									}else Core.playSound(p, "athena.def_obj_"+((char)(captureObjective+65)));
+								}
+							}.runTaskLater(Core.plugin, 45);
+						}
 					}
 					overtime = false;
 					msg = false;
 					second += maxsecond;
 					captureObjective++;
-					for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
-					else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+					for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+((char)(captureObjective+65))+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+					else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+((char)(captureObjective+65))+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
 				}
 				boolean b = false;
 				if(capturePoint[captureObjective] < 0) capturePoint[captureObjective] = 0;
@@ -543,21 +590,35 @@ public class Arena implements Listener{
 								if(team.get(p).equals("RED")) {
 									sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
 									sendMessage(p, 13);
+									message(p, Core.plugin.getConfig().getInt("CoinsWin"),1);
 								}else{
 									sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.16")), "");
 									sendMessage(p, 14);
+									message(p, Core.plugin.getConfig().getInt("CoinsLose"),0);
 								}
 							}
 							winRefresh(2);
 							this.cancel();
 							return;
+						}else if(captureObjective < 5){
+							for(Player p : team.keySet()) {
+								Core.playSound(p, "athena.cap_obj_"+((char)(captureObjective+65)));
+								new BukkitRunnable() {
+									@Override
+									public void run() {
+										if(team.get(p).equals("RED")){
+											Core.playSound(p, "athena.com_obj_"+((char)(captureObjective+65)));
+										}else Core.playSound(p, "athena.def_obj_"+((char)(captureObjective+65)));
+									}
+								}.runTaskLater(Core.plugin, 45);
+							}
 						}
 						overtime = false;
 						msg = false;
 						second += maxsecond;
 						captureObjective++;
-						for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
-						else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+(captureObjective+1)+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+						for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+((char)(captureObjective+65))+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+						else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+((char)(captureObjective+65))+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
 					}
 				}else if(second <= 0 && b == false){
 					//win
@@ -565,9 +626,11 @@ public class Arena implements Listener{
 						if(team.get(p).equals("BLUE")) {
 							sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
 							sendMessage(p, 13);
+							message(p, Core.plugin.getConfig().getInt("CoinsWin"),1);
 						}else{
 							sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.16")), "");
 							sendMessage(p, 14);
+							message(p, Core.plugin.getConfig().getInt("CoinsLose"),0);
 						}
 					}
 					winRefresh(1);
@@ -583,6 +646,7 @@ public class Arena implements Listener{
 					for(Player p : playerList.keySet()) {
 						sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
 						sendMessage(p, 13);
+						message(p, 0,0);
 					}
 					//cancel
 					winRefresh(0);
@@ -598,19 +662,35 @@ public class Arena implements Listener{
 							if(team.get(p).equals("RED")) {
 								sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.15")), "");
 								sendMessage(p, 13);
+								message(p, Core.plugin.getConfig().getInt("CoinsWin"),1);
 							}else{
 								sendTitle(p, 20, 60, 25, ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.16")), "");
 								sendMessage(p, 14);
+								message(p, Core.plugin.getConfig().getInt("CoinsLose"),0);
 							}
 						}
 						winRefresh(2);
 						this.cancel();
 						return;
+					}else if(captureObjective < 5){
+						for(Player p : team.keySet()) {
+							Core.playSound(p, "athena.cap_obj_"+((char)(captureObjective+65)));
+							new BukkitRunnable() {
+								@Override
+								public void run() {
+									if(team.get(p).equals("RED")){
+										Core.playSound(p, "athena.com_obj_"+((char)(captureObjective+65)));
+									}else Core.playSound(p, "athena.def_obj_"+((char)(captureObjective+65)));
+								}
+							}.runTaskLater(Core.plugin, 45);
+						}
 					}
 					overtime = false;
 					msg = false;
 					second += maxsecond;
 					captureObjective++;
+					for(Player p : team.keySet()) if(team.get(p).equals("BLUE")) p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.17"))+" "+ChatColor.LIGHT_PURPLE+((char)(captureObjective+65))+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
+					else p.sendMessage(Core.prefix+ChatColor.translateAlternateColorCodes('&', Core.plugin.getConfig().getString("Message.18"))+" "+ChatColor.LIGHT_PURPLE+((char)(captureObjective+65))+ChatColor.BLACK+" ("+ChatColor.GREEN+"x: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockX() +ChatColor.GREEN+" y: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockY()+ChatColor.GREEN+" z: "+ChatColor.GRAY+captureArea[captureObjective].getCenter().getBlockZ()+ChatColor.BLACK+")"); 
 				}
 			}
 		}.runTaskTimer(Core.plugin, 0, 20);
@@ -694,6 +774,7 @@ public class Arena implements Listener{
 		this.itemStore = new HashMap<Player,ItemStack[]>();
 		this.armorStore = new HashMap<Player,ItemStack[]>();
 		this.playerList = new HashMap<Player,Object>();
+		this.score_manager = new HashMap<Player,ArenaPlayerScore>();
 		this.team = new HashMap<Player,String>();
 		this.captureObjective = 0;
 		this.capturePoint = new int[getNumbericInfo()[2]];

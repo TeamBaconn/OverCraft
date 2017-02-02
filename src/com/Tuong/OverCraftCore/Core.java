@@ -94,6 +94,8 @@ public class Core extends JavaPlugin implements Listener{
 		getConfig().addDefault("DefaultSecondsToCapture", 300);
 		getConfig().addDefault("DefaultPointsToCapture", 200);
 		getConfig().addDefault("DefaultCountDownSeconds", 30);
+		getConfig().addDefault("CoinsWin", 30);
+		getConfig().addDefault("CoinsLose", 10);
 		getConfig().addDefault("Message.1", "&cYou are recovering from the death!");
 		getConfig().addDefault("Message.2", "&7You joined team &9BLUE");
 		getConfig().addDefault("Message.3", "&7You joined team &cRED");

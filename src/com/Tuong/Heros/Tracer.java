@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.bukkit.Achievement;
 import org.bukkit.Bukkit;
+import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -20,6 +21,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerAchievementAwardedEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
@@ -323,7 +325,7 @@ public class Tracer implements Listener{
 				a.setHelmet(new ItemStack(Material.SLIME_BALL));
 				a.setVisible(false);
 				a.setMetadata(player.getName(), new FixedMetadataValue(Core.plugin, "TRACER"));
-				a.setVelocity(player.getLocation().getDirection().multiply(2));
+				a.setVelocity(player.getLocation().getDirection().multiply(1.2));
 				a.setSmall(true);
 				new BukkitRunnable() {
 					int i = 0;
@@ -349,10 +351,19 @@ public class Tracer implements Listener{
 	@EventHandler
 	public void explode(EntityExplodeEvent e){
 		if(e.getEntity().hasMetadata(player.getName())){
-			e.blockList().clear();
+			e.setCancelled(true);
+			e.getEntity().getWorld().playEffect(e.getEntity().getLocation(), Effect.EXPLOSION_LARGE, 1);
 		}
 	}
-	
+	@EventHandler
+	public void explod(ExplosionPrimeEvent e){
+		if(e.getEntity().hasMetadata(player.getName())){
+			e.setCancelled(true);
+			for(Entity en : e.getEntity().getNearbyEntities(3, 3, 3)){
+				if(en instanceof Player && !arena.isAlly(player, (Player)en)) ((Player)en).damage(20 - en.getLocation().distance(e.getEntity().getLocation())*3,player);
+			}
+		}
+	}
 	@EventHandler
 	public void nodamage(EntityDamageByEntityEvent e){
 		if(e.getDamager().equals(player) && e.getEntity() instanceof Player) if(arena.isAlly(player, (Player)e.getEntity())) e.setCancelled(true);
