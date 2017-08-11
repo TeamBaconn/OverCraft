@@ -22,6 +22,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
@@ -107,7 +108,6 @@ public class Arena implements Listener{
 	public Arena(String arenaName, Location[] locationInfo,int[] numbericInfo){
 		manager = Bukkit.getScoreboardManager();
 		this.maxsecond = Core.maxsecond;
-		Bukkit.getPluginManager().registerEvents(this, Core.plugin);
 		this.locationInfo = locationInfo;
 		this.numbericInfo = numbericInfo;
 		this.arenaName = arenaName;
@@ -126,6 +126,7 @@ public class Arena implements Listener{
 		boss.setTitle("Objective Score: "+capturePoint[captureObjective]+"/"+Core.maxpoint);
 		boss.setProgress(Double.valueOf(Double.valueOf(capturePoint[captureObjective])/Double.valueOf(Core.maxpoint)));
 		refresh();
+		Bukkit.getPluginManager().registerEvents(this, Core.plugin);
 	}
 	public void winRefresh(int blue){
 		new BukkitRunnable() {
@@ -237,10 +238,10 @@ public class Arena implements Listener{
 			e.setCancelled(true);
 		}
 		Location to = e.getTo();
-		if((spawnRedRegion.contains(to.getBlockX(), to.getBlockY(), to.getBlockZ()) && team.get(e.getPlayer()).equals("BLUE")) || (spawnBlueRegion.contains(to.getBlockX(), to.getBlockY(), to.getBlockZ())&& team.get(e.getPlayer()).equals("RED"))){
+		if(team != null && spawnRedRegion != null && spawnBlueRegion != null && ((spawnRedRegion.contains(to.getBlockX(), to.getBlockY(), to.getBlockZ()) && team.get(e.getPlayer()).equals("BLUE")) || (spawnBlueRegion.contains(to.getBlockX(), to.getBlockY(), to.getBlockZ())&& team.get(e.getPlayer()).equals("RED")))){
 			e.setCancelled(true);
 		}
-		if(!arenaRegion.contains(to) && start) e.getPlayer().setHealth(0.0);
+		if(arenaRegion != null && !arenaRegion.contains(to) && start) e.getPlayer().setHealth(0.0);
 	}
 	@EventHandler
 	public void damageInGame(EntityDamageEvent e){
@@ -253,7 +254,7 @@ public class Arena implements Listener{
 		if(p.hasPermission("oc.vip")) coin = coin * 2;
 		p.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+"▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
 		p.sendMessage("");
-		p.sendMessage(ChatColor.WHITE+""+ChatColor.BOLD+"                             Match Summary");
+		p.sendMessage(ChatColor.WHITE+""+ChatColor.BOLD+"                        Match Statistics");
 		p.sendMessage("");
 		p.sendMessage(ChatColor.GOLD+"Total Earned Coins: "+ChatColor.YELLOW+ coin);
 		if(p.hasPermission("oc.vip")) p.sendMessage(ChatColor.DARK_GREEN+"       Vip bonus "+ChatColor.GREEN +"x2 coins");
@@ -261,7 +262,8 @@ public class Arena implements Listener{
 		p.sendMessage(ChatColor.RED+"Total Kills: "+ChatColor.DARK_RED+score_manager.get(p).kill);
 		p.sendMessage("");
 		p.sendMessage(ChatColor.GOLD+""+ChatColor.BOLD+"▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
-		Core.database.add(p, win, 0, score_manager.get(p).kill, score_manager.get(p).getBestKillStreak(), 0, coin);
+		if(Core.plugin.getConfig().getBoolean("BungeeCord") && Core.database.connected) Core.database.add(p, win, 0, score_manager.get(p).kill, score_manager.get(p).getBestKillStreak(), 0, coin);
+		if(Core.plugin.getConfig().getBoolean("Vault") && Core.econ != null) Core.econ.depositPlayer(p, coin);
 	}
 	@EventHandler
 	public void antiSwitch(PlayerItemHeldEvent e){
@@ -354,7 +356,7 @@ public class Arena implements Listener{
 	
 	@EventHandler
 	public void playerOut(PlayerQuitEvent e){
-		if(playerList.containsKey(e.getPlayer())){
+		if(playerList != null && playerList.containsKey(e.getPlayer())){
 			playerLeave(e.getPlayer());			
 			broadcast(5);
 			if(score_manager.containsKey(e.getPlayer())) score_manager.remove(e.getPlayer());
@@ -562,7 +564,7 @@ public class Arena implements Listener{
 				boolean b = false;
 				if(capturePoint[captureObjective] < 0) capturePoint[captureObjective] = 0;
 				for(Player p : team.keySet()){
-					if(captureArea[captureObjective].contains(p.getLocation()))
+					if(captureArea[captureObjective].contains(p.getLocation()) && !p.isDead())
 					if(team.get(p).equals("BLUE")) capturePoint[captureObjective] -= 5;
 					else {
 						capturePoint[captureObjective] += 5;
@@ -761,6 +763,14 @@ public class Arena implements Listener{
     }
     }
     }
+	@EventHandler
+	public void damageEach(EntityDamageByEntityEvent e){
+		if(!(e.getDamager() instanceof Player)) return;
+		Player player = (Player)e.getDamager();
+		if((spawnBlueRegion.contains(player.getLocation()) && team.get(player).equals("BLUE")) || (spawnRedRegion.contains(player.getLocation()) && team.get(player).equals("RED"))){
+	    	e.setCancelled(true);
+	    }
+	}
 	public void refresh(){
 		for(Item t : arenaRegion.getWorld().getEntitiesByClass(Item.class)) if(t.hasMetadata(arenaName)) t.remove();
 		while(!playerList.isEmpty()) for(Player p : playerList.keySet()){

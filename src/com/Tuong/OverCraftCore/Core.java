@@ -1,6 +1,7 @@
 package com.Tuong.OverCraftCore;
 
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent.Status;
 import org.bukkit.inventory.Inventory;
@@ -36,6 +38,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.material.Wool;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
@@ -54,6 +57,7 @@ import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 
 import net.md_5.bungee.api.ChatColor;
+import net.milkbowl.vault.economy.Economy;
 import net.minecraft.server.v1_10_R1.AxisAlignedBB;
 import net.minecraft.server.v1_10_R1.EnumParticle;
 import net.minecraft.server.v1_10_R1.IChatBaseComponent;
@@ -70,7 +74,7 @@ public class Core extends JavaPlugin implements Listener{
 	public static int maxsecond,maxpoint; 
 	public static final String prefix = ChatColor.WHITE+"["+ChatColor.GRAY+""+ChatColor.BOLD+"Over"+ChatColor.GOLD+""+ChatColor.BOLD+"Craft"+ChatColor.WHITE+"] ";
 	public static Database database;
-	private static int s1,s2,s3;
+	public static ArrayList<Player> kick;
 	private String[] instructor = {"Now, set blue team spawn by left click the block",
 			"Then set lower region of blue team spawn",
 			"And set upper region of blue team spawn",
@@ -82,8 +86,11 @@ public class Core extends JavaPlugin implements Listener{
 			"Then, set lower arena region",
 			"And set upper arena region",
 			"Set lower region for capture point 1"};
+	public static Economy econ;
 	public void onEnable(){
 		getConfig().options().copyDefaults(true);
+		getConfig().addDefault("Vault", false);
+		getConfig().addDefault("RequestTexture", true);
 		getConfig().addDefault("BungeeCord", false);
 		getConfig().addDefault("FallBackServer", "lobby");
 		getConfig().addDefault("Database", false);
@@ -94,6 +101,7 @@ public class Core extends JavaPlugin implements Listener{
 		getConfig().addDefault("DefaultSecondsToCapture", 300);
 		getConfig().addDefault("DefaultPointsToCapture", 200);
 		getConfig().addDefault("DefaultCountDownSeconds", 30);
+		getConfig().addDefault("DefaultCoins", 300);
 		getConfig().addDefault("CoinsWin", 30);
 		getConfig().addDefault("CoinsLose", 10);
 		getConfig().addDefault("Message.1", "&cYou are recovering from the death!");
@@ -148,51 +156,42 @@ public class Core extends JavaPlugin implements Listener{
 		}
 		saveConfig();
 		if(getConfig().getBoolean("Database")) {
-			database = new Database(getConfig().getString("Username"), getConfig().getString("Password"), "jdbc:mysql://localhost:3306/" +getConfig().getString("DatabaseName"));
-			if(database.connected) database.createTable("overcraft", "UUID varchar(255), RANK INTEGER, WIN INTEGER, RANK_WIN INTEGER, KILLS INTEGER, KILL_STREAK INTEGER, COIN INTEGER");
+			database = new Database(getConfig().getString("Username"), getConfig().getString("Password"), getConfig().getString("DatabaseName"));
+			if(database.connected) database.createTable("overcraft", "UUID varchar(255), RANK INTEGER, WIN INTEGER, RANK_WIN INTEGER, KILLS INTEGER, KILL_STREAK INTEGER, COIN INTEGER, HERO varchar(255)");
 		}
 		if(getConfig().getBoolean("BungeeCord")) {
-			s1 = -1; s2 = -1; s3 = -1;
 			Bukkit.getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
 			new BukkitRunnable() {
 				@Override
 				public void run() {
-					for(Player playerac : Bukkit.getServer().getOnlinePlayers()) if(arenaManager.inArena(playerac) == null) sendBackServer(playerac);
-					if(arenaManager.listArena.size() != 0){
-						boolean write = false;
-						Arena a = arenaManager.listArena.get(0);
-						if(a.getNumbericInfo()[1] != s1){
-							write = true;
-							s1 = a.getNumbericInfo()[1];
-						}
-						if(a.getPlayerList().size() != s2){
-							write = true;
-							s2 = a.getPlayerList().size();
-						}
-						if(a.iscount && s3 != 2){
-							write = true;
-							s3 = 2;
-						}
-						if(a.started() && s3 != 3){
-							write = true;
-							s3 = 3;
-						}
-						if(a.started() && s3 != 1){
-							write = true;
-							s3 = 1;
-						}
-						if(write){
-							ByteArrayDataOutput out = ByteStreams.newDataOutput();
-							out.writeUTF("Overcraft");
-							out.writeUTF(String.valueOf(s1));
-							out.writeUTF(String.valueOf(s2));
-							out.writeUTF(String.valueOf(s3));
-						}
+					//Run queue
+					for(Player player : kick) if(!player.isOnline()) kick.remove(player);
+					if(kick.size() > 0){
+						ByteArrayDataOutput out = ByteStreams.newDataOutput();
+						out.writeUTF("Connect");
+						out.writeUTF(plugin.getConfig().getString("FallBackServer"));
+						kick.get(0).sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
+					}
+					for(Player player : Bukkit.getOnlinePlayers()) if(arenaManager.inArena(player) == null) {
+						
 					}
 				}
-			}.runTaskTimer(Core.plugin, 0, 5);
+			}.runTaskTimer(Core.plugin, 0, 10);
 		}
+		if(Core.plugin.getConfig().getBoolean("Vault")) setupEconomy();
 	}
+	private boolean setupEconomy() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            return false;
+        }
+        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) {
+            return false;
+        }
+        econ = rsp.getProvider();
+        return econ != null;
+    }
+    
 	public static void playSound(Player p, String sound){
 		PacketPlayOutCustomSoundEffect packet = new PacketPlayOutCustomSoundEffect(sound, SoundCategory.VOICE, p.getEyeLocation().getBlockX(), p.getEyeLocation().getBlockY(), p.getEyeLocation().getBlockZ(), 1, 1);
 		((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
@@ -511,21 +510,31 @@ public class Core extends JavaPlugin implements Listener{
 	}
 	@EventHandler
 	public void join(PlayerJoinEvent e){
-		e.getPlayer().setResourcePack("https://drive.google.com/uc?export=download&id=0Bwjo6ZpU7OWTdFd0V0l4T3o3Ums");
+		if(getConfig().getBoolean("RequestTexture")) e.getPlayer().setResourcePack("https://drive.google.com/uc?export=download&id=0Bwjo6ZpU7OWTQ1pxV24xdmpBSXM");
 		if(e.getPlayer().hasPermission("oc.admin") && getConfig().getBoolean("Database") && database != null && !database.connected) e.getPlayer().sendMessage(prefix + ChatColor.RED+ "Database is down, check it now!!!!");
 		if(getConfig().getBoolean("BungeeCord")){
 			e.getPlayer().setGameMode(GameMode.ADVENTURE);
-			if(arenaManager.listArena.size() == 0) sendBackServer(e.getPlayer());
-			else arenaManager.listArena.get(0).playerJoin(e.getPlayer());
+			if(arenaManager.getArrayList().size() > 0){
+				Arena arena = arenaManager.getArrayList().get(0);
+				e.getPlayer().teleport(arena.getLocationInfo()[6]);
+				if(!arena.started() && arena.getNumbericInfo()[1] > arena.getPlayerList().size()){
+					arena.playerJoin(e.getPlayer());
+				}else sendBackServer(e.getPlayer());
+			}else sendBackServer(e.getPlayer());
 		}      
+		if(getConfig().getBoolean("Database") && database != null && database.connected){
+			database.reward(e.getPlayer());
+		}
+	}
+	@EventHandler
+	public void leave(PlayerQuitEvent e){
+		if(kick.contains(e.getPlayer())) kick.remove(e.getPlayer());
 	}
 	
 	public static void sendBackServer(Player p){
-		ByteArrayDataOutput out = ByteStreams.newDataOutput();
-		out.writeUTF("Connect");
-		out.writeUTF(plugin.getConfig().getString("FallBackServer"));
-		p.sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
+		kick.add(p);
 	}
+	
 	private ItemStack nameItem(ItemStack item, String name)
 	  {
 	    ItemMeta meta = item.getItemMeta();

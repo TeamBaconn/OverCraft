@@ -45,7 +45,7 @@ public class Database {
 			PreparedStatement myPreparedStatement = connection.prepareStatement(sql);
 			ResultSet results = myPreparedStatement.executeQuery();
 			if (!results.next()) {
-			     PreparedStatement myPreparedStatement1 = connection.prepareStatement("INSERT INTO overcraft(UUID,RANK,WIN,RANK_WIN,KILLS,KILL_STREAK,COIN) VALUES ('"+p.getUniqueId()+"','"+rank+"','"+win+"','"+rank_win+"','"+kill+"','"+killstreak+"','"+coin+"')");
+			     PreparedStatement myPreparedStatement1 = connection.prepareStatement("INSERT INTO overcraft(UUID,RANK,WIN,RANK_WIN,KILLS,KILL_STREAK,COIN,HERO) VALUES ('"+p.getUniqueId()+"','"+rank+"','"+win+"','"+rank_win+"','"+kill+"','"+killstreak+"','"+coin+Core.plugin.getConfig().getInt("DefaultCoins")+"','TRACER')");
 			     myPreparedStatement1.executeUpdate();
 			} else {
 				int kill_st = results.getInt("KILL_STREAK");
@@ -53,6 +53,32 @@ public class Database {
 				 PreparedStatement myPreparedStatement2 = connection.prepareStatement("UPDATE overcraft SET RANK = '"+(results.getInt("RANK")+rank)+"', WIN = '"+(results.getInt("WIN")+win)+"', RANK_WIN = '"+(results.getInt("RANK_WIN")+rank_win)+"', KILLS = '"+(results.getInt("KILLS")+kill)+"', KILL_STREAK='"+kill_st+"', COIN ='"+(coin+results.getInt("COIN"))+"' WHERE UUID = '"+p.getUniqueId()+"'");
 				 myPreparedStatement2.executeUpdate();
 			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	public boolean checkHero(Player p, String hero){
+		String sql = "SELECT * FROM overcraft WHERE UUID='"+p.getUniqueId()+"'";
+		try {
+			PreparedStatement myPreparedStatement = connection.prepareStatement(sql);
+			ResultSet results = myPreparedStatement.executeQuery();
+			if (results.next()) {
+				if(results.getString("HERO").contains("HERO")) return true;
+			} 
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return false;
+	}
+	public void reward(Player p){
+		String sql = "SELECT * FROM overcraft WHERE UUID='"+p.getUniqueId()+"'";
+		try {
+			PreparedStatement myPreparedStatement = connection.prepareStatement(sql);
+			ResultSet results = myPreparedStatement.executeQuery();
+			if (!results.next()) {
+			     PreparedStatement myPreparedStatement1 = connection.prepareStatement("INSERT INTO overcraft(UUID,RANK,WIN,RANK_WIN,KILLS,KILL_STREAK,COIN,HERO) VALUES ('"+p.getUniqueId()+"','0','0','0','0','0','"+Core.plugin.getConfig().getInt("DefaultCoins")+"','TRACER')");
+			     myPreparedStatement1.executeUpdate();
+			} 
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
