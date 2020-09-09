@@ -9,10 +9,10 @@ This is the minigame plugin for minecraft server that i made and sell on Spigotm
 <img src="https://i.ibb.co/5k68J46/Screen-Shot-2020-09-09-at-2-18-15-PM.png" alt="Intro">
 </p>
 # Features
-- <p align="left">
-<img src="
-https://proxy.spigotmc.org/84a1395a993a07c1ff692da0f058cbfe6a1011b8?url=http%3A%2F%2Fi.imgur.com%2FkenMVpj.png" alt="Intro">
+<p align="left">
+<img src="https://proxy.spigotmc.org/84a1395a993a07c1ff692da0f058cbfe6a1011b8?url=http%3A%2F%2Fi.imgur.com%2FkenMVpj.png" alt="Intro">
 </p> 
+
 # Installation
 - You can clone the source code into your project
 - Add the following dependency in Dependency List into your IDE or Maven
