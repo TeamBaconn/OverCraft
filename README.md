@@ -17,7 +17,7 @@ This is the minigame plugin for minecraft server that i made and sell on Spigotm
 - Custom 3D weapons
 <p align="center">
 <img src="https://proxy.spigotmc.org/c43c0de5c1640c679df9d5f6705a3eeebd3a5f04?url=https%3A%2F%2Fi.gyazo.com%2F8f949e0504e1079e0beb0f45092c6ba2.png" alt="Intro" width="384" height="684">
-</p>
+</p align="center">
 <img src="https://proxy.spigotmc.org/129ccdc1907f3554afb9359e42db3b6731c819b4?url=http%3A%2F%2Fi.imgur.com%2F1mY5aIF.png" alt="Intro">
 </p>
 - Capture the point gameplay **Game play video in the Installation tab**
