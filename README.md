@@ -12,11 +12,11 @@ This is the minigame plugin for minecraft server that i made and sell on Spigotm
 # Features
 - 7 classes
 <p align="center">
-<img src="https://proxy.spigotmc.org/84a1395a993a07c1ff692da0f058cbfe6a1011b8?url=http%3A%2F%2Fi.imgur.com%2FkenMVpj.png" alt="Hero76" width="250" height="400">!<img src="https://proxy.spigotmc.org/e4dff848a9a34be5856c9965881c7480ad2b21ef?url=http%3A%2F%2Fi.imgur.com%2FIb4dbHh.png" alt="Mei" width="250" height="400">!<img src="https://proxy.spigotmc.org/1c045f970c8ce422119df7759a353da3ac33573e?url=http%3A%2F%2Fi.imgur.com%2FwhXfXZt.png" alt="Genji" width="250" height="400">
+<img src="https://proxy.spigotmc.org/84a1395a993a07c1ff692da0f058cbfe6a1011b8?url=http%3A%2F%2Fi.imgur.com%2FkenMVpj.png" alt="Hero76" width="200" height="400">!<img src="https://proxy.spigotmc.org/e4dff848a9a34be5856c9965881c7480ad2b21ef?url=http%3A%2F%2Fi.imgur.com%2FIb4dbHh.png" alt="Mei" width="200" height="400">!<img src="https://proxy.spigotmc.org/1c045f970c8ce422119df7759a353da3ac33573e?url=http%3A%2F%2Fi.imgur.com%2FwhXfXZt.png" alt="Genji" width="200" height="400">
 </p>
 - Custom 3D weapons 
 <p align="center">
-<img src="https://proxy.spigotmc.org/c43c0de5c1640c679df9d5f6705a3eeebd3a5f04?url=https%3A%2F%2Fi.gyazo.com%2F8f949e0504e1079e0beb0f45092c6ba2.png" alt="Intro">
+<img src="https://proxy.spigotmc.org/c43c0de5c1640c679df9d5f6705a3eeebd3a5f04?url=https%3A%2F%2Fi.gyazo.com%2F8f949e0504e1079e0beb0f45092c6ba2.png" alt="Intro" width="162" height="">
 </p>
 
 # Installation
