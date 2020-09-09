@@ -8,7 +8,7 @@ This is the minigame plugin for minecraft server that i made and sell on Spigotm
 - You can clone the source code into your project
 - Add the following dependency in Dependency List into your IDE or Maven
 - If you want to test the plugin there is a overcraft.jar file in "Build", copy into your plugins folder and /reload on the server to make it work
-[![TURORIAL](http://img.youtube.com/vi/Pk5nKFZlTtc/0.jpg)](http://www.youtube.com/watch?v=Pk5nKFZlTtc "Overcraft Installation Tutorial")
+- [![TURORIAL](http://img.youtube.com/vi/Pk5nKFZlTtc/0.jpg)](http://www.youtube.com/watch?v=Pk5nKFZlTtc "Overcraft Installation Tutorial")
 
 # Dependency
 - Spigot server core (1.8 for current code version)
